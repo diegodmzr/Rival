@@ -14,6 +14,26 @@ interface AvatarProps {
 export function Avatar({ userId, size = 22, active = false, className }: AvatarProps) {
   const user = useStore((s) => s.users[userId]);
   const initials = user?.initials ?? "?";
+  const avatarUrl = user?.avatarUrl ?? null;
+
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt={user?.name ?? ""}
+        width={size}
+        height={size}
+        className={cn(
+          "rounded-full object-cover flex-shrink-0 select-none",
+          active ? "ring-1 ring-text" : "ring-1 ring-border",
+          className,
+        )}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
   return (
     <div
       className={cn(

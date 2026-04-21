@@ -12,6 +12,7 @@ export type Database = {
           initials: string;
           weekly_goal_hours: number;
           monthly_goal_hours: number;
+          avatar_url: string | null;
           created_at: string;
         };
         Insert: {
@@ -21,6 +22,7 @@ export type Database = {
           initials: string;
           weekly_goal_hours?: number;
           monthly_goal_hours?: number;
+          avatar_url?: string | null;
           created_at?: string;
         };
         Update: {
@@ -30,6 +32,7 @@ export type Database = {
           initials?: string;
           weekly_goal_hours?: number;
           monthly_goal_hours?: number;
+          avatar_url?: string | null;
           created_at?: string;
         };
         Relationships: [

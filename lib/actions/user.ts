@@ -36,6 +36,76 @@ export async function updateProfile(
   return { ok: true };
 }
 
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_AVATAR_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+]);
+
+export async function uploadAvatar(
+  formData: FormData,
+): Promise<{ ok: boolean; error?: string; url?: string }> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Non authentifié." };
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "Fichier manquant." };
+  }
+  if (file.size > MAX_AVATAR_BYTES) {
+    return { ok: false, error: "Image trop lourde (max 5 Mo)." };
+  }
+  if (!ALLOWED_AVATAR_TYPES.has(file.type)) {
+    return { ok: false, error: "Format non supporté (PNG, JPG, WebP, GIF)." };
+  }
+
+  const ext = file.name.includes(".") ? file.name.split(".").pop() : "png";
+  const path = `${user.id}/${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("avatars")
+    .upload(path, file, {
+      contentType: file.type,
+      upsert: true,
+      cacheControl: "3600",
+    });
+  if (uploadError) return { ok: false, error: uploadError.message };
+
+  const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+  const url = pub.publicUrl;
+
+  const { error: updateError } = await supabase
+    .from("users")
+    .update({ avatar_url: url })
+    .eq("id", user.id);
+  if (updateError) return { ok: false, error: updateError.message };
+
+  revalidatePath("/", "layout");
+  return { ok: true, url };
+}
+
+export async function removeAvatar(): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Non authentifié." };
+
+  const { error } = await supabase
+    .from("users")
+    .update({ avatar_url: null })
+    .eq("id", user.id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function signOut(): Promise<never> {
   const supabase = createClient();
   await supabase.auth.signOut();

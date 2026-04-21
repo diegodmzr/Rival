@@ -7,6 +7,7 @@ export interface User {
   email: string;
   weeklyGoal: number;
   monthlyGoal: number;
+  avatarUrl: string | null;
 }
 
 export interface Project {

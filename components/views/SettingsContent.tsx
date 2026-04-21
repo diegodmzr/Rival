@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { LogOut } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { LogOut, Camera, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/primitives/Avatar";
 import { useStore } from "@/lib/store";
 import { exportEntriesCSV } from "@/lib/export";
-import { updateProfile, signOut } from "@/lib/actions/user";
+import { updateProfile, uploadAvatar, removeAvatar, signOut } from "@/lib/actions/user";
 
 export function SettingsContent() {
   const users = useStore((s) => s.users);
@@ -24,6 +24,8 @@ export function SettingsContent() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [avatarPending, startAvatarTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!me) return;
@@ -60,6 +62,37 @@ export function SettingsContent() {
     });
   };
 
+  const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    setMessage(null);
+    const form = new FormData();
+    form.append("file", file);
+    startAvatarTransition(async () => {
+      const res = await uploadAvatar(form);
+      if (!res.ok) setError(res.error ?? "Upload échoué.");
+      else {
+        setMessage("Photo mise à jour.");
+        setTimeout(() => setMessage(null), 2500);
+      }
+    });
+  };
+
+  const onRemoveAvatar = () => {
+    setError(null);
+    setMessage(null);
+    startAvatarTransition(async () => {
+      const res = await removeAvatar();
+      if (!res.ok) setError(res.error ?? "Erreur.");
+      else {
+        setMessage("Photo supprimée.");
+        setTimeout(() => setMessage(null), 2500);
+      }
+    });
+  };
+
   return (
     <div className="p-5 md:p-6 max-w-[720px]">
       <div className="mb-5">
@@ -72,13 +105,52 @@ export function SettingsContent() {
       </div>
 
       <section className="bg-surface border border-border rounded-md px-[18px] py-4 mb-[14px]">
-        <div className="flex items-center gap-3 mb-3">
-          <Avatar userId={me.id} size={26} active />
+        <div className="flex items-center gap-4 mb-4">
+          <div className="relative">
+            <Avatar userId={me.id} size={64} active={!me.avatarUrl} />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarPending}
+              aria-label="Changer la photo"
+              className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-text text-[#050505] border-2 border-surface grid place-items-center cursor-pointer disabled:opacity-40"
+            >
+              <Camera size={13} strokeWidth={1.6} />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              onChange={onPickFile}
+              className="hidden"
+            />
+          </div>
           <div className="flex-1 min-w-0">
             <div className="text-[13px] text-text font-medium">{me.name}</div>
             <div className="text-[11px] text-text-3 truncate">{me.email}</div>
+            <div className="flex items-center gap-3 mt-[6px]">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarPending}
+                className="text-[11px] text-text-2 hover:text-text bg-transparent border-0 cursor-pointer p-0 disabled:opacity-40"
+              >
+                {avatarPending ? "…" : me.avatarUrl ? "Changer la photo" : "Ajouter une photo"}
+              </button>
+              {me.avatarUrl && (
+                <button
+                  type="button"
+                  onClick={onRemoveAvatar}
+                  disabled={avatarPending}
+                  className="inline-flex items-center gap-1 text-[11px] text-text-3 hover:text-text bg-transparent border-0 cursor-pointer p-0 disabled:opacity-40"
+                >
+                  <Trash2 size={11} strokeWidth={1.4} />
+                  Retirer
+                </button>
+              )}
+            </div>
           </div>
-          <span className="text-[10px] text-text-3 font-mono uppercase tracking-[0.6px]">
+          <span className="text-[10px] text-text-3 font-mono uppercase tracking-[0.6px] self-start">
             toi
           </span>
         </div>

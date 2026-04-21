@@ -10,6 +10,7 @@ function mapUser(row: {
   initials: string;
   weekly_goal_hours: number | string;
   monthly_goal_hours: number | string;
+  avatar_url?: string | null;
 }): User {
   return {
     id: row.id,
@@ -18,6 +19,7 @@ function mapUser(row: {
     initials: row.initials,
     weeklyGoal: Number(row.weekly_goal_hours),
     monthlyGoal: Number(row.monthly_goal_hours),
+    avatarUrl: row.avatar_url ?? null,
   };
 }
 
