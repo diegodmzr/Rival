@@ -23,6 +23,7 @@ interface AppState {
   timer: TimerState;
   hydrated: boolean;
   quickAddOpen: boolean;
+  mobileTimerOpen: boolean;
 
   // Hydration (called by StoreHydrator on every server re-render)
   hydrate: (snapshot: ServerSnapshot) => void;
@@ -30,6 +31,8 @@ interface AppState {
   // UI actions
   openQuickAdd: () => void;
   closeQuickAdd: () => void;
+  openMobileTimer: () => void;
+  closeMobileTimer: () => void;
 
   // Timer (local only — its final value is persisted via a server action)
   startTimer: (projectId?: string) => void;
@@ -57,6 +60,7 @@ export const useStore = create<AppState>()((set, get) => ({
   timer: DEFAULT_TIMER,
   hydrated: false,
   quickAddOpen: false,
+  mobileTimerOpen: false,
 
   hydrate: (snap) =>
     set((s) => {
@@ -91,6 +95,8 @@ export const useStore = create<AppState>()((set, get) => ({
 
   openQuickAdd: () => set({ quickAddOpen: true }),
   closeQuickAdd: () => set({ quickAddOpen: false }),
+  openMobileTimer: () => set({ mobileTimerOpen: true }),
+  closeMobileTimer: () => set({ mobileTimerOpen: false }),
 
   startTimer: (projectId) =>
     set((s) => ({

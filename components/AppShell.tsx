@@ -6,6 +6,7 @@ import { TopBar } from "@/components/desktop/TopBar";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { QuickAddSheet } from "@/components/mobile/QuickAddSheet";
+import { MobileTimerSheet } from "@/components/mobile/MobileTimerSheet";
 import { StoreHydrator } from "@/components/StoreHydrator";
 import { useStore, type ServerSnapshot } from "@/lib/store";
 
@@ -69,6 +70,7 @@ export function AppShell({
           </div>
 
           <QuickAddSheet />
+          <MobileTimerSheet />
         </>
       )}
     </>

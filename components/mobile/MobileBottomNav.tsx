@@ -3,11 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, BarChart3, Clock, Folder, Plus } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { pad2 } from "@/lib/format";
-import { todayISO } from "@/lib/date";
-import { stopTimerAndSave } from "@/lib/actions/timer";
 
 const NAV_LEFT = [
   { id: "home", href: "/", Icon: Home, label: "Accueil" },
@@ -23,12 +21,10 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const timer = useStore((s) => s.timer);
   const getTimerElapsed = useStore((s) => s.getTimerElapsed);
-  const pause = useStore((s) => s.pauseTimer);
-  const reset = useStore((s) => s.resetTimer);
   const openQuickAdd = useStore((s) => s.openQuickAdd);
+  const openMobileTimer = useStore((s) => s.openMobileTimer);
 
   const [, tick] = useState(0);
-  const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!timer.running) return;
@@ -42,14 +38,6 @@ export function MobileBottomNav() {
   const m = Math.floor((elapsed % 3600) / 60);
   const s = Math.floor(elapsed % 60);
 
-  const stopAndSave = () => {
-    pause();
-    reset();
-    startTransition(async () => {
-      await stopTimerAndSave(todayISO());
-    });
-  };
-
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-40"
@@ -60,27 +48,30 @@ export function MobileBottomNav() {
       }}
     >
       {running && (
-        <div
-          className="mx-4 mb-[10px] px-3 py-[9px] bg-surface border border-border-strong rounded-full flex items-center gap-[10px]"
+        <button
+          type="button"
+          onClick={openMobileTimer}
+          className="w-[calc(100%-32px)] mx-4 mb-[10px] px-3 py-[9px] bg-surface border border-border-strong rounded-full flex items-center gap-[10px] cursor-pointer text-left"
           style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.5)" }}
         >
           <div
-            className="w-[6px] h-[6px] rounded-full bg-text animate-pulse"
-            style={{ boxShadow: "0 0 0 3px rgba(250,250,250,0.1)" }}
+            className={`w-[6px] h-[6px] rounded-full ${
+              timer.running ? "bg-text animate-pulse" : "bg-text-4"
+            }`}
+            style={{
+              boxShadow: timer.running
+                ? "0 0 0 3px rgba(250,250,250,0.1)"
+                : "none",
+            }}
           />
           <div className="font-mono text-[12px] text-text">
             {pad2(h)}:{pad2(m)}:{pad2(s)}
           </div>
           <div className="flex-1" />
-          <button
-            type="button"
-            onClick={stopAndSave}
-            disabled={pending}
-            className="text-[10.5px] text-text-2 font-mono bg-transparent border-0 cursor-pointer disabled:opacity-40"
-          >
-            {pending ? "…" : "arrêter"}
-          </button>
-        </div>
+          <span className="text-[10.5px] text-text-3 font-mono">
+            {timer.running ? "en cours" : "pause"}
+          </span>
+        </button>
       )}
 
       <div

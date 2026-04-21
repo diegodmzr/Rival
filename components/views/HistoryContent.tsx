@@ -22,7 +22,12 @@ export function HistoryContent() {
   const currentUserId = useStore((s) => s.currentUserId);
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState<TimeEntry | null>(null);
-  const remove = (id: string) => startTransition(async () => { await deleteEntry(id); });
+  const remove = (id: string) => {
+    if (typeof window !== "undefined" && !window.confirm("Supprimer cette entrée ?")) return;
+    startTransition(async () => {
+      await deleteEntry(id);
+    });
+  };
 
   const [userF, setUserF] = useState<UserFilter>("all");
   const [projectF, setProjectF] = useState<ProjectFilter>("all");
@@ -197,23 +202,23 @@ export function HistoryContent() {
                         {fmt(e.hours)}
                       </div>
                       {mine ? (
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-[6px] md:gap-1 md:opacity-0 md:group-hover:opacity-100 md:transition-opacity">
                           <button
                             type="button"
                             onClick={() => setEditing(e)}
                             aria-label="Modifier l'entrée"
-                            className="text-text-4 hover:text-text-2 bg-transparent border-0 cursor-pointer"
+                            className="text-text-3 md:text-text-4 hover:text-text-2 bg-transparent border-0 cursor-pointer p-1"
                           >
-                            <Pencil size={12} strokeWidth={1.3} />
+                            <Pencil size={14} strokeWidth={1.3} />
                           </button>
                           <button
                             type="button"
                             onClick={() => remove(e.id)}
                             disabled={pending}
                             aria-label="Supprimer l'entrée"
-                            className="text-text-4 hover:text-text-2 bg-transparent border-0 cursor-pointer disabled:opacity-40"
+                            className="text-text-3 md:text-text-4 hover:text-text-2 bg-transparent border-0 cursor-pointer p-1 disabled:opacity-40"
                           >
-                            <Trash2 size={12} strokeWidth={1.3} />
+                            <Trash2 size={14} strokeWidth={1.3} />
                           </button>
                         </div>
                       ) : (
