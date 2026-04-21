@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Tracker productivité — Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+  html, body { margin: 0; padding: 0; background: #0a0a0a; color: #fafafa; }
+  * { box-sizing: border-box; }
+  body { font-family: "Geist", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  #root { width: 100vw; height: 100vh; overflow: hidden; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
+  @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+  @keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
+  @keyframes toastIn { from { transform: translateY(-8px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+
+  button:active { transform: scale(0.97); }
+  button { transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, opacity 120ms ease; }
+
+  input::placeholder { color: rgba(250,250,250,0.3); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="primitives.jsx"></script>
+<script type="text/babel" src="desktop.jsx"></script>
+<script type="text/babel" src="mobile.jsx"></script>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "layout": "side-by-side",
+  "density": "balanced",
+  "accent": "white",
+  "insightStyle": "banner",
+  "showAnnotations": true,
+  "showBothViews": true
+}/*EDITMODE-END*/;
+
+function App() {
+  const [quickAdd, setQuickAdd] = React.useState(false);
+  const [timer, setTimer] = React.useState({ running: true, elapsed: 2 * 3600 + 37 * 60 + 12 });
+  const [toast, setToast] = React.useState(null);
+  const [tweaks, setTweaks] = React.useState(() => {
+    try { const s = localStorage.getItem('tweaks-v1'); return s ? { ...TWEAK_DEFAULTS, ...JSON.parse(s) } : TWEAK_DEFAULTS; }
+    catch { return TWEAK_DEFAULTS; }
+  });
+  const [tweaksOpen, setTweaksOpen] = React.useState(false);
+
+  // Live timer tick
+  React.useEffect(() => {
+    if (!timer.running) return;
+    const t = setInterval(() => setTimer(p => ({ ...p, elapsed: p.elapsed + 1 })), 1000);
+    return () => clearInterval(t);
+  }, [timer.running]);
+
+  const onSubmitAdd = ({ h, project, note }) => {
+    setQuickAdd(false);
+    setToast(`${fmt(h)} ajoutées · ${PROJECTS.find(p => p.id === project)?.name.replace('My Folio — ','')}`);
+    setTimeout(() => setToast(null), 2500);
+  };
+  const onToggleTimer = () => setTimer(t => ({ ...t, running: !t.running }));
+
+  // Edit mode listener
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      if (!e.data || typeof e.data !== 'object') return;
+      if (e.data.type === '__activate_edit_mode') setTweaksOpen(true);
+      if (e.data.type === '__deactivate_edit_mode') setTweaksOpen(false);
+    };
+    window.addEventListener('message', onMsg);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+  const setTweak = (k, v) => {
+    const next = { ...tweaks, [k]: v };
+    setTweaks(next);
+    try { localStorage.setItem('tweaks-v1', JSON.stringify(next)); } catch {}
+    window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { [k]: v } }, '*');
+  };
+
+  const showMobile = tweaks.showBothViews !== false;
+
+  return (
+    <DesignCanvas>
+      {/* Hero section */}
+      <div style={{ padding: '0 60px 20px' }}>
+        <div style={{ fontSize: 11, fontWeight: 500, color: 'rgba(60,50,40,0.55)', fontFamily: 'ui-monospace, Menlo, monospace', textTransform: 'uppercase', letterSpacing: 1.4, marginBottom: 8 }}>
+          OUTILS DE CALCUL DE PRODUCTIVITÉ · V1
+        </div>
+        <div style={{ fontSize: 32, fontWeight: 600, color: 'rgba(40,30,20,0.9)', letterSpacing: -0.6, marginBottom: 6 }}>
+          Dashboard — Diego × Ismaël
+        </div>
+        <div style={{ fontSize: 14, color: 'rgba(60,50,40,0.65)', maxWidth: 720, lineHeight: 1.55 }}>
+          Tracker privé entre associés. Noir, blanc, gris. Accent sur la comparaison hebdomadaire,
+          avec pastille flottante <span style={{ fontFamily: 'ui-monospace, Menlo, monospace' }}>+</span>
+          pour saisir des heures en deux taps, et un timer live au sommet.
+        </div>
+      </div>
+
+      {tweaks.showAnnotations && (
+        <DCPostIt top={140} left={26} rotate={-6} width={170}>
+          Ton factuel, Linear-style. Aucune couleur : la comparaison se lit par le contraste blanc / gris.
+        </DCPostIt>
+      )}
+
+      <DCSection
+        title="Dashboard — côte à côte"
+        subtitle="Desktop 1440×900 à gauche, mobile 390×844 à droite. Même vocabulaire visuel, densité adaptée."
+      >
+        <DCArtboard label="Desktop · 1440 × 900" width={1440} height={900}>
+          <DesktopDashboard
+            onAdd={() => setQuickAdd(true)}
+            timer={timer}
+            onToggleTimer={onToggleTimer}
+          />
+        </DCArtboard>
+
+        {showMobile && (
+          <DCArtboard label="Mobile · iPhone 14 · 390 × 844" width={390} height={844}>
+            <MobileDashboard
+              timer={timer}
+              onToggleTimer={onToggleTimer}
+              quickAdd={quickAdd}
+              setQuickAdd={setQuickAdd}
+              onSubmitAdd={onSubmitAdd}
+            />
+          </DCArtboard>
+        )}
+
+        {tweaks.showAnnotations && (
+          <DCPostIt top={380} left={-180} rotate={4} width={160}>
+            Pastille "+" toujours visible sur mobile, tap = sheet, long-press prévu pour démarrer un timer.
+          </DCPostIt>
+        )}
+      </DCSection>
+
+      {/* Flow annotations below */}
+      <div style={{ padding: '0 60px 80px', maxWidth: 1000 }}>
+        <div style={{ fontSize: 18, fontWeight: 600, color: 'rgba(40,30,20,0.9)', marginBottom: 10, letterSpacing: -0.3 }}>
+          Décisions de design
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, fontSize: 13, color: 'rgba(60,50,40,0.75)', lineHeight: 1.5 }}>
+          <div>
+            <div style={{ fontWeight: 600, color: 'rgba(40,30,20,0.9)', marginBottom: 4 }}>1. La comparaison partout</div>
+            Chaque metric card porte la valeur de l'associé et l'écart. La card "Tu vs Ismaël" occupe le haut du grid, toujours visible sans scroller.
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, color: 'rgba(40,30,20,0.9)', marginBottom: 4 }}>2. Saisie en 2 taps</div>
+            Pastille "+" flottante → sheet avec stepper gros chiffres + presets (0.5, 1, 1.5, 2, 4, 8). Timer en cours visible au-dessus, prêt à être stoppé.
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, color: 'rgba(40,30,20,0.9)', marginBottom: 4 }}>3. Chiffres → Geist Mono</div>
+            Le sans-serif (Geist) pour les textes, Geist Mono pour tous les chiffres : alignement tabulaire, lecture rapide des écarts.
+          </div>
+        </div>
+      </div>
+
+      {/* Toast overlay (global) */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)',
+          background: '#0a0a0a', color: '#fafafa', border: '1px solid rgba(255,255,255,0.15)',
+          padding: '10px 16px', borderRadius: 8, fontSize: 13, zIndex: 9999,
+          fontFamily: '"Geist", sans-serif', animation: 'toastIn 220ms ease',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#fafafa' }}/>
+          {toast}
+        </div>
+      )}
+
+      {/* Global desktop quick-add modal (when opened from desktop) */}
+      {quickAdd && !showMobile && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9998, display: 'grid', placeItems: 'center', background: 'rgba(0,0,0,0.6)' }} onClick={() => setQuickAdd(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ width: 420, position: 'relative' }}>
+            <QuickAddSheet open={true} onClose={() => setQuickAdd(false)} onSubmit={onSubmitAdd} />
+          </div>
+        </div>
+      )}
+
+      {/* Tweaks panel */}
+      {tweaksOpen && (
+        <div style={{
+          position: 'fixed', bottom: 20, right: 20, zIndex: 9999,
+          width: 260, background: '#0a0a0a', color: '#fafafa',
+          border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10,
+          fontFamily: '"Geist", sans-serif', fontSize: 12,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+          overflow: 'hidden',
+        }}>
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontWeight: 500 }}>Tweaks</div>
+            <div onClick={() => setTweaksOpen(false)} style={{ color: 'rgba(250,250,250,0.4)', cursor: 'pointer' }}>{I.close(14)}</div>
+          </div>
+          <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <TweakToggle label="Afficher mobile" value={tweaks.showBothViews} onChange={v => setTweak('showBothViews', v)} />
+            <TweakToggle label="Annotations (post-its)" value={tweaks.showAnnotations} onChange={v => setTweak('showAnnotations', v)} />
+            <TweakRadio label="Densité" value={tweaks.density} options={[['compact','Compact'],['balanced','Équilibré'],['airy','Aéré']]} onChange={v => setTweak('density', v)} />
+            <TweakRadio label="Style d'insight" value={tweaks.insightStyle} options={[['banner','Banderole'],['card','Card'],['toast','Toast']]} onChange={v => setTweak('insightStyle', v)} />
+            <div>
+              <div style={{ fontSize: 10.5, color: 'rgba(250,250,250,0.4)', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, fontFamily: 'Geist Mono, monospace' }}>Actions</div>
+              <button onClick={() => { setQuickAdd(true); }} style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, color: '#fafafa', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                Ouvrir saisie rapide
+              </button>
+              <div style={{ height: 6 }}/>
+              <button onClick={onToggleTimer} style={{ width: '100%', padding: '8px 10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, color: '#fafafa', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {timer.running ? 'Mettre timer en pause' : 'Démarrer timer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </DesignCanvas>
+  );
+}
+
+function TweakToggle({ label, value, onChange }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ color: 'rgba(250,250,250,0.75)' }}>{label}</div>
+      <div onClick={() => onChange(!value)} style={{
+        width: 32, height: 18, borderRadius: 99, padding: 2,
+        background: value ? '#fafafa' : 'rgba(255,255,255,0.1)',
+        cursor: 'pointer', transition: 'background 180ms',
+      }}>
+        <div style={{
+          width: 14, height: 14, borderRadius: '50%',
+          background: value ? '#050505' : '#fafafa',
+          transform: value ? 'translateX(14px)' : 'translateX(0)',
+          transition: 'transform 180ms ease',
+        }}/>
+      </div>
+    </div>
+  );
+}
+function TweakRadio({ label, value, options, onChange }) {
+  return (
+    <div>
+      <div style={{ fontSize: 10.5, color: 'rgba(250,250,250,0.4)', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, fontFamily: 'Geist Mono, monospace' }}>{label}</div>
+      <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.04)', padding: 2, borderRadius: 5, border: '1px solid rgba(255,255,255,0.06)' }}>
+        {options.map(([v, lbl]) => (
+          <div key={v} onClick={() => onChange(v)} style={{
+            flex: 1, textAlign: 'center', padding: '5px 6px', borderRadius: 3,
+            background: v === value ? 'rgba(255,255,255,0.08)' : 'transparent',
+            color: v === value ? '#fafafa' : 'rgba(250,250,250,0.5)',
+            fontSize: 11, cursor: 'pointer',
+          }}>{lbl}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+setTimeout(() => {
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<App />);
+}, 50);
+</script>
+
+<template id="__bundler_thumbnail">
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="#0a0a0a"/>
+  <path d="M25 70 L40 55 L55 62 L75 35" stroke="#fafafa" stroke-width="2" fill="none"/>
+  <circle cx="75" cy="35" r="3" fill="#fafafa"/>
+</svg>
+</template>
+</body>
+</html>
