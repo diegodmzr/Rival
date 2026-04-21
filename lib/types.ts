@@ -23,6 +23,7 @@ export interface TimeEntry {
   hours: number;
   date: string; // yyyy-mm-dd (local date)
   note: string;
+  category: string | null;
   createdAt: string; // ISO
 }
 

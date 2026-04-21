@@ -53,8 +53,14 @@ export function RecentCard() {
               >
                 <Avatar userId={e.userId} size={20} active={mine} />
                 <div className="min-w-0">
-                  <div className="text-[12.5px] text-text flex gap-2 items-baseline">
+                  <div className="text-[12.5px] text-text flex gap-2 items-baseline flex-wrap">
                     <span>{proj?.name ?? e.projectId}</span>
+                    {e.category && (
+                      <>
+                        <span className="text-text-4 text-[11px]">·</span>
+                        <span className="text-text-3 text-[11px]">{e.category}</span>
+                      </>
+                    )}
                     <span className="text-text-4 text-[11px]">·</span>
                     <span className="text-text-3 font-mono text-[11px]">
                       {formatRelativeDate(e.date, e.createdAt)}

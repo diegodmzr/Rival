@@ -3,7 +3,7 @@
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { Avatar } from "@/components/primitives/Avatar";
 import { useStore } from "@/lib/store";
-import { fmt, fmtDiff, fmtMetric } from "@/lib/format";
+import { fmt, fmtDiff, fmtParts } from "@/lib/format";
 import type { UserId } from "@/lib/types";
 
 interface MetricProps {
@@ -17,6 +17,7 @@ export function Metric({ label, value, rivalValue, rivalId }: MetricProps) {
   const rivalUser = useStore((s) => s.users[rivalId]);
   const diff = value - rivalValue;
   const leading = diff >= 0;
+  const parts = fmtParts(value);
   return (
     <div className="bg-surface border border-border rounded-md px-[18px] py-4 flex flex-col gap-3 min-h-[126px]">
       <div className="flex items-center justify-between">
@@ -24,8 +25,8 @@ export function Metric({ label, value, rivalValue, rivalId }: MetricProps) {
       </div>
       <div className="flex items-baseline gap-2">
         <div className="font-mono text-[32px] text-text font-medium tracking-[-0.5px]">
-          {fmtMetric(value)}
-          <span className="text-[16px] text-text-3 ml-[2px]">h</span>
+          {parts.main}
+          <span className="text-[16px] text-text-3 ml-[2px]">{parts.suffix}</span>
         </div>
       </div>
       <div className="flex items-center gap-[6px] text-[11px] text-text-3 font-mono">

@@ -40,6 +40,9 @@ export function MobileRecent() {
               <div className="min-w-0">
                 <div className="text-[12px] text-text whitespace-nowrap overflow-hidden text-ellipsis">
                   {proj?.name.replace("My Folio — ", "") ?? e.projectId}
+                  {e.category && (
+                    <span className="text-text-3 ml-[6px]">· {e.category}</span>
+                  )}
                 </div>
                 <div className="text-[10px] text-text-3 font-mono mt-px">
                   {formatRelativeDate(e.date, e.createdAt)}

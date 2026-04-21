@@ -3,7 +3,7 @@
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { useStore, selectCurrentUser, selectRivalUser } from "@/lib/store";
 import { todayHours, weekHours, monthHours } from "@/lib/compute";
-import { fmtDiff, fmtMetric } from "@/lib/format";
+import { fmtDiff, fmtParts } from "@/lib/format";
 
 export function MobileMetricRow() {
   const entries = useStore((s) => s.entries);
@@ -33,6 +33,7 @@ export function MobileMetricRow() {
       {cells.map((c) => {
         const diff = c.me - c.r;
         const leading = diff >= 0;
+        const parts = fmtParts(c.me);
         return (
           <div
             key={c.label}
@@ -42,8 +43,8 @@ export function MobileMetricRow() {
               {c.label}
             </div>
             <div className="text-[22px] font-mono text-text mt-[6px] font-medium tracking-[-0.5px]">
-              {fmtMetric(c.me)}
-              <span className="text-[12px] text-text-3">h</span>
+              {parts.main}
+              <span className="text-[12px] text-text-3">{parts.suffix}</span>
             </div>
             <div
               className={`flex items-center gap-1 mt-1 text-[10.5px] font-mono ${

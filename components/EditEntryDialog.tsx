@@ -3,9 +3,10 @@
 import { useEffect, useState, useTransition } from "react";
 import { Plus, Minus, X } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { fmt, fmtMetric } from "@/lib/format";
+import { fmt, fmtParts } from "@/lib/format";
 import { todayISO } from "@/lib/date";
 import { updateEntry } from "@/lib/actions/entries";
+import { CATEGORIES } from "@/lib/categories";
 import type { TimeEntry } from "@/lib/types";
 
 const PRESETS = [0.5, 1, 1.5, 2, 4, 8];
@@ -21,6 +22,7 @@ export function EditEntryDialog({
 
   const [h, setH] = useState(0);
   const [projectId, setProjectId] = useState("");
+  const [category, setCategory] = useState<string>("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(todayISO());
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +32,7 @@ export function EditEntryDialog({
     if (!entry) return;
     setH(entry.hours);
     setProjectId(entry.projectId);
+    setCategory(entry.category ?? "");
     setNote(entry.note);
     setDate(entry.date);
     setError(null);
@@ -48,6 +51,7 @@ export function EditEntryDialog({
         projectId,
         date,
         note,
+        category: category || null,
       });
       if (!res.ok) {
         setError(res.error ?? "Erreur lors de la mise à jour.");
@@ -57,13 +61,17 @@ export function EditEntryDialog({
     });
   };
 
+  const hParts = fmtParts(h);
+
   return (
-    <>
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-[90] bg-black/60 flex items-end md:items-center justify-center animate-fadeIn"
+    >
       <div
-        onClick={onClose}
-        className="fixed inset-0 bg-black/60 z-[90] animate-fadeIn"
-      />
-      <div className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:top-1/2 md:bottom-auto md:-translate-x-1/2 md:-translate-y-1/2 md:w-[440px] md:rounded-2xl bg-surface border border-border-strong rounded-t-2xl px-[18px] pt-2 pb-7 z-[91] animate-slideUp max-h-[90vh] overflow-y-auto">
+        onClick={(e) => e.stopPropagation()}
+        className="w-full md:w-[440px] rounded-t-2xl md:rounded-2xl bg-surface border border-border-strong px-[18px] pt-2 pb-7 animate-slideUp max-h-[90vh] overflow-y-auto"
+      >
         <div className="w-9 h-1 bg-white/20 rounded-full mx-auto mt-[6px] mb-[14px] md:hidden" />
         <div className="flex items-center justify-between mb-[14px]">
           <div className="text-[15px] text-text font-medium">Modifier l&apos;entrée</div>
@@ -88,8 +96,8 @@ export function EditEntryDialog({
           </button>
           <div className="text-center">
             <div className="font-mono text-[40px] text-text font-medium tracking-[-0.8px] leading-none">
-              {fmtMetric(h)}
-              <span className="text-[18px] text-text-3 ml-[2px]">h</span>
+              {hParts.main}
+              <span className="text-[18px] text-text-3 ml-[2px]">{hParts.suffix}</span>
             </div>
             <div className="text-[10.5px] text-text-4 font-mono mt-1 uppercase tracking-[0.8px]">
               par pas de 15 min
@@ -119,7 +127,7 @@ export function EditEntryDialog({
                     : "bg-surface2 border-border text-text-2"
                 }`}
               >
-                {v}h
+                {fmt(v)}
               </button>
             );
           })}
@@ -144,6 +152,31 @@ export function EditEntryDialog({
                   }`}
                 >
                   {p.name.replace("My Folio — ", "")}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mb-3">
+          <div className="text-[10.5px] text-text-3 uppercase tracking-[0.6px] font-mono mb-[6px]">
+            Catégorie
+          </div>
+          <div className="flex gap-[6px] flex-wrap">
+            {CATEGORIES.map((c) => {
+              const active = c === category;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategory(active ? "" : c)}
+                  className={`px-3 py-[7px] rounded-md text-[11.5px] cursor-pointer border ${
+                    active
+                      ? "bg-white/[0.08] border-border-strong text-text"
+                      : "bg-surface2 border-border text-text-2"
+                  }`}
+                >
+                  {c}
                 </button>
               );
             })}
@@ -182,6 +215,6 @@ export function EditEntryDialog({
           {pending ? "Enregistrement…" : "Enregistrer"}
         </button>
       </div>
-    </>
+    </div>
   );
 }

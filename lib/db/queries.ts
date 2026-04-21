@@ -42,6 +42,7 @@ function mapEntry(row: {
   hours: number | string;
   date: string;
   note: string;
+  category?: string | null;
   created_at: string;
 }): TimeEntry {
   return {
@@ -51,6 +52,7 @@ function mapEntry(row: {
     hours: Number(row.hours),
     date: row.date,
     note: row.note ?? "",
+    category: row.category ?? null,
     createdAt: row.created_at,
   };
 }

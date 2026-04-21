@@ -73,7 +73,7 @@ export function HistoryContent() {
           </div>
           <div className="text-[11.5px] text-text-3 mt-[2px]">
             {filtered.length} entrée{filtered.length > 1 ? "s" : ""} ·{" "}
-            <span className="font-mono text-text">{fmt(total)}h</span>
+            <span className="font-mono text-text">{fmt(total)}</span>
           </div>
         </div>
         <button
@@ -158,7 +158,7 @@ export function HistoryContent() {
                 {formatRelativeDate(date)}
               </div>
               <div className="text-[11px] text-text-3 font-mono">
-                {fmt(dayTotal)}h · {list.length}
+                {fmt(dayTotal)} · {list.length}
               </div>
             </div>
             <div className="bg-surface border border-border rounded-md overflow-hidden">
@@ -176,6 +176,9 @@ export function HistoryContent() {
                     <div className="min-w-0">
                       <div className="text-[12.5px] text-text truncate">
                         {proj?.name ?? e.projectId}
+                        {e.category && (
+                          <span className="text-text-3 ml-2">· {e.category}</span>
+                        )}
                       </div>
                       {e.note && (
                         <div className="text-[11px] text-text-3 truncate">

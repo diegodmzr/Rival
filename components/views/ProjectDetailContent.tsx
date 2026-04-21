@@ -7,7 +7,7 @@ import { useStore, selectCurrentUser, selectRivalUser } from "@/lib/store";
 import { Avatar } from "@/components/primitives/Avatar";
 import { LineChart } from "@/components/primitives/LineChart";
 import { dailySeries } from "@/lib/compute";
-import { fmt, fmtMetric } from "@/lib/format";
+import { fmt, fmtParts } from "@/lib/format";
 import { formatRelativeDate } from "@/lib/date";
 import { deleteEntry } from "@/lib/actions/entries";
 import { EditEntryDialog } from "@/components/EditEntryDialog";
@@ -86,21 +86,24 @@ export function ProjectDetailContent({ id }: { id: string }) {
           { label: "Toi", v: myHours, id: me.id },
           { label: rival.name, v: rivalHours, id: rival.id },
           { label: "Total", v: total, id: null },
-        ].map((c) => (
-          <div
-            key={c.label}
-            className="bg-surface border border-border rounded-md px-[14px] py-[12px] flex flex-col gap-1"
-          >
-            <div className="text-[10.5px] text-text-3 uppercase tracking-[0.6px] font-mono flex items-center gap-2">
-              {c.id && <Avatar userId={c.id} size={14} />}
-              {c.label}
+        ].map((c) => {
+          const parts = fmtParts(c.v);
+          return (
+            <div
+              key={c.label}
+              className="bg-surface border border-border rounded-md px-[14px] py-[12px] flex flex-col gap-1"
+            >
+              <div className="text-[10.5px] text-text-3 uppercase tracking-[0.6px] font-mono flex items-center gap-2">
+                {c.id && <Avatar userId={c.id} size={14} />}
+                {c.label}
+              </div>
+              <div className="font-mono text-[22px] text-text font-medium tracking-[-0.4px]">
+                {parts.main}
+                <span className="text-[13px] text-text-3 ml-[2px]">{parts.suffix}</span>
+              </div>
             </div>
-            <div className="font-mono text-[22px] text-text font-medium tracking-[-0.4px]">
-              {fmtMetric(c.v)}
-              <span className="text-[13px] text-text-3 ml-[2px]">h</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="bg-surface border border-border rounded-md px-[18px] py-4 mb-[14px]">

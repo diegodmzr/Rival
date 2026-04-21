@@ -77,6 +77,7 @@ export type Database = {
           hours: number;
           date: string;
           note: string;
+          category: string | null;
           created_at: string;
         };
         Insert: {
@@ -86,6 +87,7 @@ export type Database = {
           hours: number;
           date: string;
           note?: string;
+          category?: string | null;
           created_at?: string;
         };
         Update: {
@@ -95,6 +97,7 @@ export type Database = {
           hours?: number;
           date?: string;
           note?: string;
+          category?: string | null;
           created_at?: string;
         };
         Relationships: [

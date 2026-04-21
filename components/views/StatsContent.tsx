@@ -15,7 +15,7 @@ import {
   bestDay,
   projectBreakdown,
 } from "@/lib/compute";
-import { fmt, fmtMetric } from "@/lib/format";
+import { fmt, fmtParts } from "@/lib/format";
 
 type Range = "7j" | "30j" | "90j" | "1a";
 const RANGES: Range[] = ["7j", "30j", "90j", "1a"];
@@ -97,20 +97,23 @@ export function StatsContent() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-[10px] md:gap-[14px] mb-[14px]">
-        {stats.map((s) => (
-          <div
-            key={s.label}
-            className="bg-surface border border-border rounded-md px-[14px] py-[14px] flex flex-col gap-2"
-          >
-            <div className="text-[10.5px] text-text-3 uppercase tracking-[0.6px] font-mono">
-              {s.label}
+        {stats.map((s) => {
+          const parts = s.suffix === "h" ? fmtParts(s.v) : { main: String(s.v), suffix: s.suffix };
+          return (
+            <div
+              key={s.label}
+              className="bg-surface border border-border rounded-md px-[14px] py-[14px] flex flex-col gap-2"
+            >
+              <div className="text-[10.5px] text-text-3 uppercase tracking-[0.6px] font-mono">
+                {s.label}
+              </div>
+              <div className="font-mono text-[24px] text-text font-medium tracking-[-0.4px]">
+                {parts.main}
+                <span className="text-[13px] text-text-3 ml-[2px]">{parts.suffix}</span>
+              </div>
             </div>
-            <div className="font-mono text-[24px] text-text font-medium tracking-[-0.4px]">
-              {s.mono ? s.v : fmtMetric(s.v)}
-              <span className="text-[13px] text-text-3 ml-[2px]">{s.suffix}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="bg-surface border border-border rounded-md px-[18px] py-4 mb-[14px]">

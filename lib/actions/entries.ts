@@ -11,6 +11,7 @@ export interface AddEntryInput {
   hours: number;
   date: string;
   note?: string;
+  category?: string | null;
 }
 
 export async function addEntry(input: AddEntryInput): Promise<{ ok: boolean; error?: string }> {
@@ -26,6 +27,7 @@ export async function addEntry(input: AddEntryInput): Promise<{ ok: boolean; err
     hours: input.hours,
     date: input.date,
     note: input.note?.trim() ?? "",
+    category: input.category?.trim() ? input.category.trim() : null,
   });
   if (error) return { ok: false, error: error.message };
 
@@ -38,6 +40,7 @@ export interface UpdateEntryInput {
   date?: string;
   note?: string;
   projectId?: string;
+  category?: string | null;
 }
 
 export async function updateEntry(
@@ -50,6 +53,9 @@ export async function updateEntry(
   if (patch.date !== undefined) dbPatch.date = patch.date;
   if (patch.note !== undefined) dbPatch.note = patch.note.trim();
   if (patch.projectId !== undefined) dbPatch.project_id = patch.projectId;
+  if (patch.category !== undefined) {
+    dbPatch.category = patch.category?.trim() ? patch.category.trim() : null;
+  }
 
   const { error } = await supabase.from("time_entries").update(dbPatch).eq("id", id);
   if (error) return { ok: false, error: error.message };
