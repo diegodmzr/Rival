@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Home,
@@ -33,12 +34,14 @@ export function Sidebar() {
   return (
     <aside className="w-[220px] flex-shrink-0 bg-surface border-r border-border flex flex-col px-[14px] py-5">
       <div className="flex items-center gap-[10px] px-2 py-[6px] mb-[18px]">
-        <div
-          className="w-[22px] h-[22px] rounded-[5px] grid place-items-center text-[#050505] text-[11px] font-bold"
-          style={{ background: "linear-gradient(135deg, #fafafa 0%, #737373 100%)" }}
-        >
-          D·I
-        </div>
+        <Image
+          src="/logo-white.png"
+          alt="Rival"
+          width={22}
+          height={22}
+          priority
+          className="rounded-[5px]"
+        />
         <div className="flex flex-col flex-1 min-w-0">
           <div className="text-[12.5px] font-medium text-text">Diego × Ismaël</div>
           <div className="text-[10.5px] text-text-3">Workspace</div>
