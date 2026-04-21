@@ -52,8 +52,9 @@ export function MobileBottomNav() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 pb-[22px] z-40"
+      className="fixed bottom-0 left-0 right-0 z-40"
       style={{
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 22px)",
         background:
           "linear-gradient(to top, rgba(5,5,5,1) 60%, rgba(5,5,5,0))",
       }}

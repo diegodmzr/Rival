@@ -57,7 +57,12 @@ export function AppShell({
             </div>
           </div>
 
-          <div className="md:hidden relative w-full min-h-screen bg-bg text-text flex flex-col">
+          <div
+            className="md:hidden relative w-full min-h-screen bg-bg text-text flex flex-col"
+            style={{
+              paddingTop: "env(safe-area-inset-top)",
+            }}
+          >
             <MobileHeader />
             <div className="flex-1 pb-[120px]">{children}</div>
             <MobileBottomNav />
