@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Play } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { formatShortHeaderDate } from "@/lib/date";
@@ -40,7 +41,9 @@ export function MobileHeader() {
             />
           )}
         </button>
-        <Avatar userId={currentUser.id} size={34} />
+        <Link href="/settings" aria-label="Paramètres" className="block">
+          <Avatar userId={currentUser.id} size={34} />
+        </Link>
       </div>
     </div>
   );
