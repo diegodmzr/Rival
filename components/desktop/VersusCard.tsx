@@ -5,6 +5,7 @@ import { Avatar } from "@/components/primitives/Avatar";
 import { useStore } from "@/lib/store";
 import { weekHours } from "@/lib/compute";
 import { fmt, pct } from "@/lib/format";
+import { versusLabel } from "@/lib/homeCopy";
 
 export function VersusCard() {
   const entries = useStore((s) => s.entries);
@@ -15,10 +16,10 @@ export function VersusCard() {
   const meWeek = weekHours(entries, currentUserId);
   const rivalWeek = weekHours(entries, rivalId);
   const diff = meWeek - rivalWeek;
-  const leaderId = diff >= 0 ? currentUserId : rivalId;
   const max = Math.max(meWeek, rivalWeek, 0.01);
   const rows = [currentUserId, rivalId];
   const goal = users[currentUserId].weeklyGoal;
+  const label = versusLabel({ diff, rivalName: users[rivalId]?.name ?? "" });
 
   return (
     <div className="bg-surface border border-border rounded-md px-[18px] py-4 flex flex-col gap-[14px] col-span-2">
@@ -31,9 +32,7 @@ export function VersusCard() {
         </div>
         <div className="flex items-center gap-[6px] text-[11px] text-text-2 font-mono">
           <Trophy size={12} strokeWidth={1.3} />
-          <span>
-            {Math.abs(diff) < 0.01 ? "Égalité" : `${users[leaderId].name} en tête`}
-          </span>
+          <span>{label}</span>
         </div>
       </div>
 

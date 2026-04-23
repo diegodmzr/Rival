@@ -38,7 +38,7 @@ export function RecentCard() {
         <div>
           {sorted.length === 0 && (
             <div className="px-[18px] py-6 text-[12px] text-text-3 border-t border-border">
-              Aucune entrée. Utilise « Ajouter des heures » pour démarrer.
+              0 entrée. Le game commence pas tout seul.
             </div>
           )}
           {sorted.map((e, i) => {

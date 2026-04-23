@@ -2,25 +2,40 @@
 
 import Link from "next/link";
 import { Play } from "lucide-react";
-import { useStore } from "@/lib/store";
+import { useStore, selectCurrentUser, selectRivalUser } from "@/lib/store";
 import { formatShortHeaderDate } from "@/lib/date";
 import { Avatar } from "@/components/primitives/Avatar";
+import { todayHours, weekHours } from "@/lib/compute";
+import { dashboardSubcopy } from "@/lib/homeCopy";
 
 export function MobileHeader() {
-  const currentUser = useStore((s) => s.users[s.currentUserId]);
+  const currentUser = useStore(selectCurrentUser);
+  const rival = useStore(selectRivalUser);
+  const entries = useStore((s) => s.entries);
   const timerRunning = useStore((s) => s.timer.running);
   const openMobileTimer = useStore((s) => s.openMobileTimer);
   const hr = new Date().getHours();
   const hello = hr < 12 ? "Bonjour" : hr < 18 ? "Bon après-midi" : "Bonsoir";
+
+  const sub = dashboardSubcopy({
+    todayHours: todayHours(entries, currentUser.id),
+    meWeek: weekHours(entries, currentUser.id),
+    rivalWeek: weekHours(entries, rival.id),
+    rivalName: rival.name,
+  });
+
   return (
     <div className="px-5 pt-2 pb-[14px] flex items-center justify-between">
-      <div>
+      <div className="min-w-0 flex-1 pr-3">
         <div className="text-[10.5px] text-text-3 font-mono uppercase tracking-[0.8px]">
           {formatShortHeaderDate()}
         </div>
         <div className="text-[22px] text-text font-medium tracking-[-0.4px] mt-[2px]">
           {hello}, {currentUser.name}.
         </div>
+        {sub && (
+          <div className="text-[11.5px] text-text-2 mt-[2px]">{sub}</div>
+        )}
       </div>
       <div className="flex gap-2 items-center">
         <button

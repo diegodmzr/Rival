@@ -2,14 +2,25 @@
 
 import { Plus } from "lucide-react";
 import { TimerBar } from "./TimerBar";
-import { useStore } from "@/lib/store";
+import { useStore, selectCurrentUser, selectRivalUser } from "@/lib/store";
 import { formatHeaderDate } from "@/lib/date";
+import { todayHours, weekHours } from "@/lib/compute";
+import { dashboardSubcopy } from "@/lib/homeCopy";
 
 export function TopBar() {
-  const currentUser = useStore((s) => s.users[s.currentUserId]);
+  const currentUser = useStore(selectCurrentUser);
+  const rival = useStore(selectRivalUser);
+  const entries = useStore((s) => s.entries);
   const openQuickAdd = useStore((s) => s.openQuickAdd);
   const hr = new Date().getHours();
   const hello = hr < 12 ? "Bonjour" : hr < 18 ? "Bon après-midi" : "Bonsoir";
+
+  const sub = dashboardSubcopy({
+    todayHours: todayHours(entries, currentUser.id),
+    meWeek: weekHours(entries, currentUser.id),
+    rivalWeek: weekHours(entries, rival.id),
+    rivalName: rival.name,
+  });
 
   return (
     <div className="px-7 pt-6 pb-[22px] border-b border-border flex items-end gap-[18px]">
@@ -20,6 +31,9 @@ export function TopBar() {
         <div className="text-[26px] font-medium tracking-[-0.6px] text-text mt-1">
           {hello}, {currentUser.name}.
         </div>
+        {sub && (
+          <div className="text-[12px] text-text-2 mt-[2px]">{sub}</div>
+        )}
       </div>
       <TimerBar />
       <button

@@ -25,7 +25,7 @@ export function MobileRecent() {
       </div>
       <div className="bg-surface border border-border rounded-lg overflow-hidden">
         {sorted.length === 0 && (
-          <div className="px-3 py-6 text-[12px] text-text-3">Aucune entrée.</div>
+          <div className="px-3 py-6 text-[12px] text-text-3">0 entrée. Le game commence pas tout seul.</div>
         )}
         {sorted.map((e, i) => {
           const proj = projects.find((p) => p.id === e.projectId);

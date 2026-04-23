@@ -5,6 +5,7 @@ import { useStore } from "@/lib/store";
 import { weekHours, streakDays, bestDay } from "@/lib/compute";
 import { fmt } from "@/lib/format";
 import { exportEntriesCSV } from "@/lib/export";
+import { insightLead } from "@/lib/homeCopy";
 
 export function InsightBanner() {
   const entries = useStore((s) => s.entries);
@@ -17,11 +18,13 @@ export function InsightBanner() {
 
   const meWeek = weekHours(entries, currentUserId);
   const rivalWeek = weekHours(entries, rivalId);
-  const diff = meWeek - rivalWeek;
-  const leaderId = diff >= 0 ? currentUserId : rivalId;
-  const gap = Math.abs(diff);
   const streak = streakDays(entries, currentUserId);
   const best = bestDay(entries, currentUserId);
+  const lead = insightLead({
+    meWeek,
+    rivalWeek,
+    rivalName: users[rivalId]?.name ?? "",
+  });
 
   return (
     <div className="flex items-center gap-[14px] px-[18px] py-[11px] border-b border-border bg-surface text-[12.5px]">
@@ -29,15 +32,7 @@ export function InsightBanner() {
         <Sparkles size={11} strokeWidth={1.3} className="text-text-3" />
         Insight
       </div>
-      <div className="text-text font-medium">
-        {gap < 0.01 ? (
-          <>Égalité parfaite cette semaine.</>
-        ) : leaderId === currentUserId ? (
-          <>Tu mènes la semaine de <span className="font-mono">{fmt(gap)}</span>.</>
-        ) : (
-          <>{users[leaderId].name} mène la semaine de <span className="font-mono">{fmt(gap)}</span>.</>
-        )}
-      </div>
+      <div className="text-text font-medium">{lead}</div>
       <div className="w-px h-[14px] bg-border" />
       <div className="text-text-2">
         Streak en cours ·{" "}

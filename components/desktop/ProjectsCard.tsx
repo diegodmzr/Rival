@@ -50,7 +50,7 @@ export function ProjectsCard() {
           </div>
         ))}
         {items.every((x) => x.stat.total === 0) && (
-          <div className="text-[11px] text-text-4 py-3">Aucune entrée sur 30 jours.</div>
+          <div className="text-[11px] text-text-4 py-3">30 jours. Zéro. On bouge ?</div>
         )}
       </div>
     </div>
