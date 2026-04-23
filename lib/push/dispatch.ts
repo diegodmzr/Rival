@@ -5,6 +5,29 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { fmt } from "@/lib/format";
 import { todayISO, daysAgoISO } from "@/lib/date";
 
+const MILESTONES = [5, 10, 15] as const;
+type Milestone = (typeof MILESTONES)[number];
+
+const MILESTONE_MESSAGES: Record<Milestone, { title: string; body: string }[]> = {
+  5: [
+    { title: "5 heures. Tu viens de t'échauffer.", body: "Le vrai boulot commence maintenant." },
+    { title: "5h aujourd'hui.", body: "Les autres dorment encore. Continue." },
+  ],
+  10: [
+    { title: "10h. Journée sérieuse.", body: "Peu de gens t'auraient suivi jusque là." },
+    { title: "10h posées.", body: "Tu viens de passer devant 95% du monde." },
+  ],
+  15: [
+    { title: "15h. C'est plus une journée.", body: "C'est une démonstration." },
+    { title: "15h dans les jambes.", body: "Les excuses n'ont jamais construit personne." },
+  ],
+};
+
+function pickMilestoneMessage(m: Milestone) {
+  const arr = MILESTONE_MESSAGES[m];
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 // Fire-and-forget wrapper so callers don't need to await. Errors are logged
 // but never propagated — a push failure shouldn't break the main action.
 function fireAndForget(promise: Promise<unknown>) {
@@ -63,6 +86,30 @@ export async function notifyEntryAdded(params: {
         });
       }
     })(),
+  );
+}
+
+// Triggered after a user adds an entry dated today. Fires a pep-talk
+// notif to the user themselves if their day total just crossed a
+// milestone (5h, 10h, 15h). Only the highest crossed tier is sent.
+export function notifyDailyMilestone(params: {
+  userId: string;
+  oldHours: number;
+  newHours: number;
+}) {
+  const crossed = MILESTONES.filter(
+    (m) => params.oldHours < m && params.newHours >= m,
+  );
+  if (crossed.length === 0) return;
+  const highest = crossed[crossed.length - 1];
+  const msg = pickMilestoneMessage(highest);
+  fireAndForget(
+    sendPushToUser(params.userId, {
+      title: msg.title,
+      body: msg.body,
+      url: "/",
+      tag: `milestone-${highest}-${todayISO()}`,
+    }),
   );
 }
 

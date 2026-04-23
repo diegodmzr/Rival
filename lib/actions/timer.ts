@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
+import { notifyDailyMilestone, notifyEntryAdded } from "@/lib/push/dispatch";
+import { todayISO } from "@/lib/date";
 
 type TimerRow = Database["public"]["Tables"]["active_timers"]["Row"];
 
@@ -140,6 +142,19 @@ export async function stopTimerAndSave(
   const hours = Math.round((totalSec / 3600) * 4) / 4;
 
   if (hours > 0 && row.project_id) {
+    let beforeHours = 0;
+    if (dateISO === todayISO()) {
+      const { data: existing } = await supabase
+        .from("time_entries")
+        .select("hours")
+        .eq("user_id", userId)
+        .eq("date", dateISO);
+      beforeHours = (existing ?? []).reduce(
+        (s, e) => s + Number(e.hours),
+        0,
+      );
+    }
+
     const { error: insErr } = await supabase.from("time_entries").insert({
       user_id: userId,
       project_id: row.project_id,
@@ -148,6 +163,28 @@ export async function stopTimerAndSave(
       note: note?.trim() ?? "",
     });
     if (insErr) return { ok: false, error: insErr.message };
+
+    const { data: proj } = await supabase
+      .from("projects")
+      .select("name, is_personal")
+      .eq("id", row.project_id)
+      .maybeSingle();
+    if (proj && !proj.is_personal) {
+      notifyEntryAdded({
+        actorUserId: userId,
+        projectName: proj.name,
+        hours,
+        date: dateISO,
+      });
+    }
+
+    if (dateISO === todayISO()) {
+      notifyDailyMilestone({
+        userId,
+        oldHours: beforeHours,
+        newHours: beforeHours + hours,
+      });
+    }
   }
 
   const { error: delErr } = await supabase

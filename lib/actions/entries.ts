@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
-import { notifyEntryAdded } from "@/lib/push/dispatch";
+import { notifyEntryAdded, notifyDailyMilestone } from "@/lib/push/dispatch";
+import { todayISO } from "@/lib/date";
 
 type EntryUpdate = Database["public"]["Tables"]["time_entries"]["Update"];
 
@@ -21,6 +22,20 @@ export async function addEntry(input: AddEntryInput): Promise<{ ok: boolean; err
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Non authentifié." };
+
+  // Day total before insert — used to detect milestone crossings.
+  let beforeHours = 0;
+  if (input.date === todayISO()) {
+    const { data: existing } = await supabase
+      .from("time_entries")
+      .select("hours")
+      .eq("user_id", user.id)
+      .eq("date", input.date);
+    beforeHours = (existing ?? []).reduce(
+      (s, e) => s + Number(e.hours),
+      0,
+    );
+  }
 
   const { error } = await supabase.from("time_entries").insert({
     user_id: user.id,
@@ -45,6 +60,14 @@ export async function addEntry(input: AddEntryInput): Promise<{ ok: boolean; err
       projectName: proj.name,
       hours: input.hours,
       date: input.date,
+    });
+  }
+
+  if (input.date === todayISO()) {
+    notifyDailyMilestone({
+      userId: user.id,
+      oldHours: beforeHours,
+      newHours: beforeHours + input.hours,
     });
   }
 
