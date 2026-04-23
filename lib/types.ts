@@ -34,3 +34,11 @@ export interface TimerState {
   elapsedBase: number;
   projectId: string;
 }
+
+export interface DayRecap {
+  id: string;
+  userId: UserId;
+  date: string; // yyyy-mm-dd (local date)
+  note: string;
+  updatedAt: string; // ISO
+}

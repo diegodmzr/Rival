@@ -8,6 +8,7 @@ import {
   BarChart3,
   Folder,
   Clock,
+  NotebookPen,
   Settings as SettingsIcon,
   ChevronDown,
   LogOut,
@@ -21,6 +22,7 @@ const NAV = [
   { href: "/stats", label: "Statistiques", Icon: BarChart3, match: (p: string) => p.startsWith("/stats") },
   { href: "/projects", label: "Projets", Icon: Folder, match: (p: string) => p.startsWith("/projects") },
   { href: "/history", label: "Historique", Icon: Clock, match: (p: string) => p.startsWith("/history") },
+  { href: "/recap", label: "Recap", Icon: NotebookPen, match: (p: string) => p.startsWith("/recap") },
   { href: "/settings", label: "Paramètres", Icon: SettingsIcon, match: (p: string) => p.startsWith("/settings") },
 ];
 

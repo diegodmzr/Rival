@@ -8,6 +8,7 @@ import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { QuickAddSheet } from "@/components/mobile/QuickAddSheet";
 import { MobileTimerSheet } from "@/components/mobile/MobileTimerSheet";
 import { StoreHydrator } from "@/components/StoreHydrator";
+import { RealtimeSync } from "@/components/RealtimeSync";
 import { useStore, type ServerSnapshot } from "@/lib/store";
 
 export function AppShell({
@@ -44,6 +45,7 @@ export function AppShell({
   return (
     <>
       <StoreHydrator data={data} />
+      <RealtimeSync userId={data.currentUser.id} />
       {!hydrated ? (
         <div className="w-full h-screen bg-bg grid place-items-center">
           <div className="text-text-3 text-[12px] font-mono">chargement…</div>

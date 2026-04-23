@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { Project, TimeEntry, TimerState, User, UserId } from "./types";
+import type { DayRecap, Project, TimeEntry, TimerState, User, UserId } from "./types";
 import { todayISO } from "./date";
 
 export interface ServerSnapshot {
@@ -10,6 +10,7 @@ export interface ServerSnapshot {
   projects: Project[];
   entries: TimeEntry[];
   timer: TimerState | null;
+  recaps: DayRecap[];
 }
 
 interface AppState {
@@ -18,6 +19,7 @@ interface AppState {
   users: Record<UserId, User>;
   projects: Project[];
   entries: TimeEntry[];
+  recaps: DayRecap[];
 
   // Local UI state
   timer: TimerState;
@@ -27,6 +29,17 @@ interface AppState {
 
   // Hydration (called by StoreHydrator on every server re-render)
   hydrate: (snapshot: ServerSnapshot) => void;
+
+  // Realtime patches (called by RealtimeSync from Supabase Realtime events)
+  applyTimer: (timer: TimerState | null) => void;
+  upsertEntry: (entry: TimeEntry) => void;
+  removeEntry: (id: string) => void;
+  upsertProject: (project: Project) => void;
+  removeProject: (id: string) => void;
+  upsertUser: (user: User) => void;
+  upsertRecap: (recap: DayRecap) => void;
+  removeRecap: (id: string) => void;
+  setLocalRecap: (date: string, note: string) => void;
 
   // UI actions
   openQuickAdd: () => void;
@@ -56,6 +69,7 @@ export const useStore = create<AppState>()((set, get) => ({
   users: {},
   projects: [],
   entries: [],
+  recaps: [],
 
   timer: DEFAULT_TIMER,
   hydrated: false,
@@ -88,9 +102,107 @@ export const useStore = create<AppState>()((set, get) => ({
         users: Object.fromEntries(snap.team.map((u) => [u.id, u])),
         projects: snap.projects,
         entries: snap.entries,
+        recaps: snap.recaps,
         hydrated: true,
         timer: nextTimer,
       };
+    }),
+
+  applyTimer: (incoming) =>
+    set((s) => {
+      if (!incoming) {
+        return {
+          timer: {
+            ...DEFAULT_TIMER,
+            projectId: s.timer.projectId,
+          },
+        };
+      }
+      const fallbackProjectId = s.projects[0]?.id ?? "";
+      const resolved =
+        incoming.projectId && s.projects.some((p) => p.id === incoming.projectId)
+          ? incoming.projectId
+          : fallbackProjectId;
+      return {
+        timer: {
+          running: incoming.running,
+          startedAt: incoming.startedAt,
+          elapsedBase: incoming.elapsedBase,
+          projectId: resolved,
+        },
+      };
+    }),
+
+  upsertEntry: (entry) =>
+    set((s) => {
+      const idx = s.entries.findIndex((e) => e.id === entry.id);
+      if (idx === -1) {
+        return { entries: [entry, ...s.entries] };
+      }
+      const next = s.entries.slice();
+      next[idx] = entry;
+      return { entries: next };
+    }),
+
+  removeEntry: (id) =>
+    set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),
+
+  upsertProject: (project) =>
+    set((s) => {
+      const idx = s.projects.findIndex((p) => p.id === project.id);
+      if (idx === -1) {
+        return { projects: [...s.projects, project] };
+      }
+      const next = s.projects.slice();
+      next[idx] = project;
+      return { projects: next };
+    }),
+
+  removeProject: (id) =>
+    set((s) => ({ projects: s.projects.filter((p) => p.id !== id) })),
+
+  upsertUser: (user) =>
+    set((s) => ({ users: { ...s.users, [user.id]: user } })),
+
+  upsertRecap: (recap) =>
+    set((s) => {
+      const idx = s.recaps.findIndex(
+        (r) => r.userId === recap.userId && r.date === recap.date,
+      );
+      if (idx === -1) {
+        return { recaps: [recap, ...s.recaps] };
+      }
+      const next = s.recaps.slice();
+      next[idx] = recap;
+      return { recaps: next };
+    }),
+
+  removeRecap: (id) =>
+    set((s) => ({ recaps: s.recaps.filter((r) => r.id !== id) })),
+
+  // Local optimistic update for the current user's recap for a given day.
+  // `note` is stored as-is here so the textarea stays responsive; the server
+  // action trims and persists (or deletes if empty).
+  setLocalRecap: (date, note) =>
+    set((s) => {
+      const userId = s.currentUserId;
+      if (!userId) return s;
+      const idx = s.recaps.findIndex(
+        (r) => r.userId === userId && r.date === date,
+      );
+      if (idx === -1) {
+        const placeholder: DayRecap = {
+          id: `local-${userId}-${date}`,
+          userId,
+          date,
+          note,
+          updatedAt: new Date().toISOString(),
+        };
+        return { recaps: [placeholder, ...s.recaps] };
+      }
+      const next = s.recaps.slice();
+      next[idx] = { ...next[idx], note, updatedAt: new Date().toISOString() };
+      return { recaps: next };
     }),
 
   openQuickAdd: () => set({ quickAddOpen: true }),

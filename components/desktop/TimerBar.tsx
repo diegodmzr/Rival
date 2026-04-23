@@ -11,6 +11,7 @@ import {
   setTimerProject as setTimerProjectAction,
   stopTimerAndSave,
 } from "@/lib/actions/timer";
+import { FloatingTimerButton } from "./FloatingTimerWindow";
 
 export function TimerBar() {
   const timer = useStore((s) => s.timer);
@@ -119,6 +120,7 @@ export function TimerBar() {
           <Square size={10} strokeWidth={1.3} />
         </button>
       )}
+      <FloatingTimerButton />
     </div>
   );
 }
