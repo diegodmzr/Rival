@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
 import { notifyDailyMilestone, notifyEntryAdded } from "@/lib/push/dispatch";
 import { todayISO } from "@/lib/date";
+import { getRestDayCheck } from "@/lib/restDay";
 
 type TimerRow = Database["public"]["Tables"]["active_timers"]["Row"];
 
@@ -22,6 +23,14 @@ async function getAuthed() {
 export async function startTimer(projectId?: string): Promise<ActionResult> {
   const { supabase, userId } = await getAuthed();
   if (!userId) return { ok: false, error: "Non authentifié." };
+
+  const rest = await getRestDayCheck(supabase, userId, todayISO());
+  if (rest.active && rest.remaining <= 0) {
+    return {
+      ok: false,
+      error: "Jour de repos — quota atteint. Repose-toi.",
+    };
+  }
 
   const { data: existing } = await supabase
     .from("active_timers")
@@ -139,11 +148,18 @@ export async function stopTimerAndSave(
     ? Math.max(0, (Date.now() - new Date(row.started_at).getTime()) / 1000)
     : 0;
   const totalSec = elapsedBase + runningDelta;
-  const hours = Math.round((totalSec / 3600) * 4) / 4;
+  let hours = Math.round((totalSec / 3600) * 4) / 4;
+
+  // Cap the saved hours at the rest-day remainder so a runaway timer
+  // can't be "cashed out" past the cap.
+  const rest = await getRestDayCheck(supabase, userId, dateISO);
+  if (rest.active) {
+    hours = Math.min(hours, rest.remaining);
+  }
 
   if (hours > 0 && row.project_id) {
-    let beforeHours = 0;
-    if (dateISO === todayISO()) {
+    let beforeHours = rest.active ? rest.logged : 0;
+    if (!rest.active && dateISO === todayISO()) {
       const { data: existing } = await supabase
         .from("time_entries")
         .select("hours")

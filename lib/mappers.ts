@@ -8,6 +8,8 @@ export interface UserRow {
   weekly_goal_hours: number | string;
   monthly_goal_hours: number | string;
   avatar_url?: string | null;
+  rest_day_weekday?: number | null;
+  rest_day_max_hours?: number | string | null;
 }
 
 export interface ProjectRow {
@@ -54,6 +56,11 @@ export function mapUserRow(row: UserRow): User {
     weeklyGoal: Number(row.weekly_goal_hours),
     monthlyGoal: Number(row.monthly_goal_hours),
     avatarUrl: row.avatar_url ?? null,
+    restDayWeekday:
+      row.rest_day_weekday === null || row.rest_day_weekday === undefined
+        ? null
+        : Number(row.rest_day_weekday),
+    restDayMaxHours: row.rest_day_max_hours == null ? 0 : Number(row.rest_day_max_hours),
   };
 }
 

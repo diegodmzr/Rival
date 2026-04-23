@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { exportEntriesCSV } from "@/lib/export";
 import { updateProfile, uploadAvatar, removeAvatar, signOut } from "@/lib/actions/user";
 import { PushSettings } from "@/components/PushSettings";
+import { RestDaySettings } from "@/components/RestDaySettings";
 
 export function SettingsContent() {
   const users = useStore((s) => s.users);
@@ -205,6 +206,8 @@ export function SettingsContent() {
           </div>
         </section>
       )}
+
+      <RestDaySettings />
 
       <PushSettings />
 

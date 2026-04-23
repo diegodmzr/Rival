@@ -8,6 +8,8 @@ export interface User {
   weeklyGoal: number;
   monthlyGoal: number;
   avatarUrl: string | null;
+  restDayWeekday: number | null; // 0 = Sunday ... 6 = Saturday
+  restDayMaxHours: number;
 }
 
 export interface Project {

@@ -12,6 +12,7 @@ import { StreakCard } from "@/components/desktop/StreakCard";
 import { RecentCard } from "@/components/desktop/RecentCard";
 import { BadgesCard } from "@/components/desktop/BadgesCard";
 import { RecapPromptCard } from "@/components/desktop/RecapPromptCard";
+import { RestDayBanner } from "@/components/RestDayBanner";
 import { MobileInsight } from "@/components/mobile/MobileInsight";
 import { MobileMetricRow } from "@/components/mobile/MobileMetricRow";
 import { MobileVersus } from "@/components/mobile/MobileVersus";
@@ -37,6 +38,7 @@ export function DashboardContent() {
       <div className="hidden md:block">
         <InsightBanner />
         <div className="p-6">
+          <RestDayBanner />
           <RecapPromptCard />
           <div className="grid grid-cols-4 gap-[14px] mb-[14px]">
             <Metric
@@ -77,6 +79,7 @@ export function DashboardContent() {
       <div className="md:hidden">
         <MobileInsight />
         <div className="mx-4">
+          <RestDayBanner />
           <RecapPromptCard />
         </div>
         <MobileMetricRow />

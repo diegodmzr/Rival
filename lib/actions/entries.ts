@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
 import { notifyEntryAdded, notifyDailyMilestone } from "@/lib/push/dispatch";
 import { todayISO } from "@/lib/date";
+import { getRestDayCheck } from "@/lib/restDay";
+import { fmt } from "@/lib/format";
 
 type EntryUpdate = Database["public"]["Tables"]["time_entries"]["Update"];
 
@@ -23,9 +25,18 @@ export async function addEntry(input: AddEntryInput): Promise<{ ok: boolean; err
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Non authentifié." };
 
+  // Rest-day check: block the insert if it would push the day over the cap.
+  const rest = await getRestDayCheck(supabase, user.id, input.date);
+  if (rest.active && rest.logged + input.hours > rest.max) {
+    return {
+      ok: false,
+      error: `Jour de repos — max ${fmt(rest.max)} aujourd'hui. Déjà ${fmt(rest.logged)} loggées.`,
+    };
+  }
+
   // Day total before insert — used to detect milestone crossings.
-  let beforeHours = 0;
-  if (input.date === todayISO()) {
+  let beforeHours = rest.active ? rest.logged : 0;
+  if (!rest.active && input.date === todayISO()) {
     const { data: existing } = await supabase
       .from("time_entries")
       .select("hours")

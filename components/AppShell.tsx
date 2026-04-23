@@ -10,6 +10,7 @@ import { MobileTimerSheet } from "@/components/mobile/MobileTimerSheet";
 import { StoreHydrator } from "@/components/StoreHydrator";
 import { RealtimeSync } from "@/components/RealtimeSync";
 import { NotificationsManager } from "@/components/NotificationsManager";
+import { RestDayEnforcer } from "@/components/RestDayEnforcer";
 import { useStore, type ServerSnapshot } from "@/lib/store";
 
 export function AppShell({
@@ -48,6 +49,7 @@ export function AppShell({
       <StoreHydrator data={data} />
       <RealtimeSync userId={data.currentUser.id} />
       <NotificationsManager />
+      <RestDayEnforcer />
       {!hydrated ? (
         <div className="w-full h-screen bg-bg grid place-items-center">
           <div className="text-text-3 text-[12px] font-mono">chargement…</div>

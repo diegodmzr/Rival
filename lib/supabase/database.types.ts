@@ -13,6 +13,8 @@ export type Database = {
           weekly_goal_hours: number;
           monthly_goal_hours: number;
           avatar_url: string | null;
+          rest_day_weekday: number | null;
+          rest_day_max_hours: number;
           created_at: string;
         };
         Insert: {
@@ -23,6 +25,8 @@ export type Database = {
           weekly_goal_hours?: number;
           monthly_goal_hours?: number;
           avatar_url?: string | null;
+          rest_day_weekday?: number | null;
+          rest_day_max_hours?: number;
           created_at?: string;
         };
         Update: {
@@ -33,6 +37,8 @@ export type Database = {
           weekly_goal_hours?: number;
           monthly_goal_hours?: number;
           avatar_url?: string | null;
+          rest_day_weekday?: number | null;
+          rest_day_max_hours?: number;
           created_at?: string;
         };
         Relationships: [

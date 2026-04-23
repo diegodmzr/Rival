@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
+import { parseISODate, todayISO } from "@/lib/date";
 
 type UserUpdate = Database["public"]["Tables"]["users"]["Update"];
 
@@ -12,6 +13,59 @@ export interface UpdateProfileInput {
   initials?: string;
   weeklyGoal?: number;
   monthlyGoal?: number;
+}
+
+export interface UpdateRestDayInput {
+  weekday: number | null; // 0 = Sunday … 6 = Saturday, null to disable
+  maxHours: number;
+}
+
+export async function updateRestDay(
+  patch: UpdateRestDayInput,
+): Promise<{ ok: boolean; error?: string }> {
+  if (patch.weekday !== null && (patch.weekday < 0 || patch.weekday > 6)) {
+    return { ok: false, error: "Jour invalide." };
+  }
+  if (!Number.isFinite(patch.maxHours) || patch.maxHours < 0) {
+    return { ok: false, error: "Nombre d'heures invalide." };
+  }
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Non authentifié." };
+
+  const { data: me } = await supabase
+    .from("users")
+    .select("rest_day_weekday")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  // If today is already a rest day, lock the settings — no rationalizing.
+  const todayWeekday = parseISODate(todayISO()).getDay();
+  if (
+    me?.rest_day_weekday !== null &&
+    me?.rest_day_weekday !== undefined &&
+    todayWeekday === me.rest_day_weekday
+  ) {
+    return {
+      ok: false,
+      error: "Impossible de changer ton jour de repos aujourd'hui.",
+    };
+  }
+
+  const { error } = await supabase
+    .from("users")
+    .update({
+      rest_day_weekday: patch.weekday,
+      rest_day_max_hours: patch.weekday === null ? 0 : patch.maxHours,
+    })
+    .eq("id", user.id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 export async function updateProfile(
