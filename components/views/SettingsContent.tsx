@@ -6,6 +6,7 @@ import { Avatar } from "@/components/primitives/Avatar";
 import { useStore } from "@/lib/store";
 import { exportEntriesCSV } from "@/lib/export";
 import { updateProfile, uploadAvatar, removeAvatar, signOut } from "@/lib/actions/user";
+import { PushSettings } from "@/components/PushSettings";
 
 export function SettingsContent() {
   const users = useStore((s) => s.users);
@@ -204,6 +205,8 @@ export function SettingsContent() {
           </div>
         </section>
       )}
+
+      <PushSettings />
 
       <section className="bg-surface border border-border rounded-md px-[18px] py-4 mb-[14px]">
         <div className="text-[13px] text-text font-medium mb-3">Données</div>

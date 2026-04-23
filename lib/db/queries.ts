@@ -50,6 +50,7 @@ export async function getProjects(): Promise<Project[]> {
   const { data, error } = await supabase
     .from("projects")
     .select("*")
+    .order("is_personal", { ascending: true })
     .order("created_at", { ascending: true });
   if (error || !data) return [];
   return data.map(mapProjectRow);

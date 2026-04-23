@@ -15,6 +15,7 @@ export interface ProjectRow {
   name: string;
   created_at: string;
   created_by: string;
+  is_personal?: boolean | null;
 }
 
 export interface EntryRow {
@@ -62,6 +63,7 @@ export function mapProjectRow(row: ProjectRow): Project {
     name: row.name,
     createdAt: row.created_at,
     createdBy: row.created_by,
+    isPersonal: row.is_personal ?? false,
   };
 }
 

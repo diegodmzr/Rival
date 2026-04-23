@@ -32,6 +32,17 @@ export async function renameProject(
   if (!trimmed) return { ok: false, error: "Nom requis." };
 
   const supabase = createClient();
+
+  const { data: existing, error: loadErr } = await supabase
+    .from("projects")
+    .select("is_personal")
+    .eq("id", id)
+    .maybeSingle();
+  if (loadErr) return { ok: false, error: loadErr.message };
+  if (existing?.is_personal) {
+    return { ok: false, error: "Le projet Personnel ne peut pas être renommé." };
+  }
+
   const { error } = await supabase.from("projects").update({ name: trimmed }).eq("id", id);
   if (error) return { ok: false, error: error.message };
 
@@ -41,6 +52,16 @@ export async function renameProject(
 
 export async function deleteProject(id: string): Promise<{ ok: boolean; error?: string }> {
   const supabase = createClient();
+
+  const { data: existing, error: loadErr } = await supabase
+    .from("projects")
+    .select("is_personal")
+    .eq("id", id)
+    .maybeSingle();
+  if (loadErr) return { ok: false, error: loadErr.message };
+  if (existing?.is_personal) {
+    return { ok: false, error: "Le projet Personnel ne peut pas être supprimé." };
+  }
 
   const { count, error: countErr } = await supabase
     .from("time_entries")

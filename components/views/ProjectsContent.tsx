@@ -30,7 +30,13 @@ export function ProjectsContent() {
       month: breakdown30[p.id]?.total ?? 0,
       byUser: breakdownAll[p.id]?.hours ?? { [me.id]: 0, [rival.id]: 0 },
     }))
-    .sort((a, b) => b.allTime - a.allTime);
+    // Keep the personal project pinned at the bottom, regular ones sorted by total hours.
+    .sort((a, b) => {
+      if (a.project.isPersonal !== b.project.isPersonal) {
+        return a.project.isPersonal ? 1 : -1;
+      }
+      return b.allTime - a.allTime;
+    });
 
   const showError = (msg: string) => {
     setError(msg);
@@ -167,6 +173,11 @@ export function ProjectsContent() {
                     <span className="text-[13px] text-text font-medium truncate group-hover:underline">
                       {project.name}
                     </span>
+                    {project.isPersonal && (
+                      <span className="text-[9.5px] text-text-3 uppercase tracking-[0.6px] font-mono px-[6px] py-[2px] rounded-[3px] bg-white/[0.04] border border-border">
+                        Perso
+                      </span>
+                    )}
                     <ChevronRight
                       size={12}
                       strokeWidth={1.3}
@@ -196,7 +207,7 @@ export function ProjectsContent() {
                 </div>
                 <div className="font-mono text-[13px] text-text">{fmt(allTime)}</div>
               </div>
-              {!editing && (
+              {!editing && !project.isPersonal && (
                 <div className="flex gap-1">
                   <button
                     type="button"
@@ -216,6 +227,7 @@ export function ProjectsContent() {
                   </button>
                 </div>
               )}
+              {!editing && project.isPersonal && <div />}
             </div>
           );
         })}

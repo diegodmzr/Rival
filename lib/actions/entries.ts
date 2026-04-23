@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
+import { notifyEntryAdded } from "@/lib/push/dispatch";
 
 type EntryUpdate = Database["public"]["Tables"]["time_entries"]["Update"];
 
@@ -30,6 +31,22 @@ export async function addEntry(input: AddEntryInput): Promise<{ ok: boolean; err
     category: input.category?.trim() ? input.category.trim() : null,
   });
   if (error) return { ok: false, error: error.message };
+
+  const { data: proj } = await supabase
+    .from("projects")
+    .select("name, is_personal")
+    .eq("id", input.projectId)
+    .maybeSingle();
+  // Personal entries stay silent — notifying the rival of your own
+  // learning time is noise.
+  if (proj && !proj.is_personal) {
+    notifyEntryAdded({
+      actorUserId: user.id,
+      projectName: proj.name,
+      hours: input.hours,
+      date: input.date,
+    });
+  }
 
   revalidatePath("/", "layout");
   return { ok: true };

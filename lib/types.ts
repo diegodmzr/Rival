@@ -15,6 +15,7 @@ export interface Project {
   name: string;
   createdAt: string;
   createdBy: UserId;
+  isPersonal: boolean;
 }
 
 export interface TimeEntry {

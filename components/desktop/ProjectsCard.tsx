@@ -14,6 +14,7 @@ export function ProjectsCard() {
 
   const breakdown = projectBreakdown(entries, 30, [currentUserId, rivalId]);
   const items = projects
+    .filter((p) => !p.isPersonal)
     .map((p) => ({ project: p, stat: breakdown[p.id] ?? { projectId: p.id, hours: { [currentUserId]: 0, [rivalId]: 0 }, total: 0 } }))
     .sort((a, b) => b.stat.total - a.stat.total);
   const max = Math.max(...items.map((x) => x.stat.total), 0.01);

@@ -50,18 +50,21 @@ export type Database = {
           name: string;
           created_at: string;
           created_by: string;
+          is_personal: boolean;
         };
         Insert: {
           id?: string;
           name: string;
           created_at?: string;
           created_by: string;
+          is_personal?: boolean;
         };
         Update: {
           id?: string;
           name?: string;
           created_at?: string;
           created_by?: string;
+          is_personal?: boolean;
         };
         Relationships: [
           {
@@ -146,6 +149,43 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "day_recaps_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          endpoint?: string;
+          p256dh?: string;
+          auth?: string;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey";
             columns: ["user_id"];
             referencedRelation: "users";
             referencedColumns: ["id"];
