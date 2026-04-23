@@ -58,6 +58,33 @@ function pickMilestoneMessage(m: Milestone) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+type EntryAddedCtx = { name: string; hours: string; project: string };
+type OvertakeCtx = { name: string; actor: string; other: string };
+
+const ENTRY_ADDED_VARIANTS: ((c: EntryAddedCtx) => { title: string; body: string })[] = [
+  (c) => ({ title: `${c.name} bosse. Toi, tu regardes.`, body: `+${c.hours}. T'attends quoi ?` }),
+  (c) => ({ title: `${c.name} +${c.hours}.`, body: `Toi, t'as fait quoi depuis ce matin ?` }),
+  (c) => ({ title: `Pendant que tu hésites, ${c.name} construit.`, body: `${c.hours} sur ${c.project}. Réveille-toi.` }),
+  (c) => ({ title: `${c.name} n'attend pas ta permission.`, body: `+${c.hours}. Rattrape ou ferme-la.` }),
+  (c) => ({ title: `${c.name} vient d'enfoncer le clou.`, body: `${c.hours}. Ton excuse du jour, c'est quoi ?` }),
+  (c) => ({ title: `${c.name} signe +${c.hours}.`, body: `Toi, t'as signé quoi aujourd'hui ?` }),
+  (c) => ({ title: `${c.name} joue. Toi, tu commentes.`, body: `+${c.hours}. Le game ne t'attend pas.` }),
+];
+
+const OVERTAKE_VARIANTS: ((c: OvertakeCtx) => { title: string; body: string })[] = [
+  (c) => ({ title: `Tu viens de te faire manger.`, body: `${c.name} : ${c.actor}. Toi : ${c.other}. Humiliant, non ?` }),
+  (c) => ({ title: `Second.`, body: `${c.actor} vs ${c.other}. C'est là que tu voulais être ?` }),
+  (c) => ({ title: `${c.name} t'a dépassé.`, body: `Et il a même pas transpiré.` }),
+  (c) => ({ title: `T'as perdu ta place.`, body: `${c.actor} vs ${c.other}. Tu reprends ou t'acceptes ?` }),
+  (c) => ({ title: `Tu regardes le dos de ${c.name}.`, body: `${c.actor} vs ${c.other}. Accélère.` }),
+  (c) => ({ title: `Tu viens de devenir second.`, body: `L'élite a pas de place pour les seconds.` }),
+  (c) => ({ title: `${c.name} t'a écrasé.`, body: `${c.actor} vs ${c.other}. La semaine est pas finie.` }),
+];
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 // Fire-and-forget wrapper so callers don't need to await. Errors are logged
 // but never propagated — a push failure shouldn't break the main action.
 function fireAndForget(promise: Promise<unknown>) {
@@ -101,18 +128,24 @@ export async function notifyEntryAdded(params: {
         const overtook =
           actorWeek > otherWeek &&
           actorWeek - Number(params.hours) <= otherWeek;
-        const title = overtook
-          ? `${actor.name} vient de te dépasser`
-          : `${actor.name} a loggué ${fmt(params.hours)}`;
-        const body = overtook
-          ? `Semaine : ${fmt(actorWeek)} vs ${fmt(otherWeek)}.`
-          : `${params.projectName} · ${fmt(params.hours)}`;
+
+        const msg = overtook
+          ? pickRandom(OVERTAKE_VARIANTS)({
+              name: actor.name,
+              actor: fmt(actorWeek),
+              other: fmt(otherWeek),
+            })
+          : pickRandom(ENTRY_ADDED_VARIANTS)({
+              name: actor.name,
+              hours: fmt(params.hours),
+              project: params.projectName,
+            });
 
         await sendPushToUser(other.id, {
-          title,
-          body,
+          title: msg.title,
+          body: msg.body,
           url: "/history",
-          tag: "entry-added",
+          tag: overtook ? "overtake" : "entry-added",
         });
       }
     })(),
