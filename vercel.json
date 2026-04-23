@@ -2,12 +2,8 @@
   "framework": "nextjs",
   "crons": [
     {
-      "path": "/api/cron/recap-reminder",
+      "path": "/api/cron/daily",
       "schedule": "0 20 * * *"
-    },
-    {
-      "path": "/api/cron/stale-timer",
-      "schedule": "*/30 * * * *"
     }
   ]
 }
