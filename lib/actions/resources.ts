@@ -13,7 +13,7 @@ const YOUTUBE_HOSTS = new Set([
   "www.youtu.be",
 ]);
 
-export function parseYouTubeId(raw: string): string | null {
+function parseYouTubeId(raw: string): string | null {
   let url: URL;
   try {
     url = new URL(raw.trim());
