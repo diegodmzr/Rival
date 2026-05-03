@@ -113,6 +113,7 @@ export interface ResourceRow {
   url: string;
   youtube_id: string | null;
   thumbnail_url: string | null;
+  storage_path: string | null;
   added_by: string;
   created_at: string;
 }
@@ -134,6 +135,7 @@ export function mapResourceRow(row: ResourceRow): Resource {
     url: row.url,
     youtubeId: row.youtube_id,
     thumbnailUrl: row.thumbnail_url,
+    storagePath: row.storage_path,
     addedBy: row.added_by,
     createdAt: row.created_at,
   };

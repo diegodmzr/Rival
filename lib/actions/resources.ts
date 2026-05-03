@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { ResourceKind, ResourceStatus } from "@/lib/types";
+import { RESOURCE_FILES_BUCKET } from "@/lib/resources";
 
 const YOUTUBE_HOSTS = new Set([
   "youtube.com",
@@ -57,6 +58,7 @@ export interface AddResourceInput {
   title?: string;
   description?: string;
   category?: string;
+  storagePath?: string | null;
 }
 
 export async function addResource(
@@ -100,6 +102,8 @@ export async function addResource(
     return { ok: false, error: "Type non supporté." };
   }
 
+  const storagePath = input.storagePath?.trim() || null;
+
   const { data, error } = await supabase
     .from("resources")
     .insert({
@@ -110,11 +114,17 @@ export async function addResource(
       url,
       youtube_id: youtubeId,
       thumbnail_url: thumbnailUrl,
+      storage_path: storagePath,
       added_by: user.id,
     })
     .select("id")
     .single();
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    if (storagePath) {
+      await supabase.storage.from(RESOURCE_FILES_BUCKET).remove([storagePath]);
+    }
+    return { ok: false, error: error.message };
+  }
 
   revalidatePath("/", "layout");
   return { ok: true, id: data.id };
@@ -122,8 +132,22 @@ export async function addResource(
 
 export async function deleteResource(id: string): Promise<{ ok: boolean; error?: string }> {
   const supabase = createClient();
+
+  const { data: existing } = await supabase
+    .from("resources")
+    .select("storage_path")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase.from("resources").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+
+  if (existing?.storage_path) {
+    await supabase.storage
+      .from(RESOURCE_FILES_BUCKET)
+      .remove([existing.storage_path]);
+  }
+
   revalidatePath("/", "layout");
   return { ok: true };
 }

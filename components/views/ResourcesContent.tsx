@@ -15,6 +15,8 @@ import {
   Filter,
   Library,
   Play,
+  Upload,
+  Link as LinkIcon,
 } from "lucide-react";
 import { useStore, selectCurrentUser, selectRivalUser } from "@/lib/store";
 import { Avatar } from "@/components/primitives/Avatar";
@@ -23,6 +25,8 @@ import {
   deleteResource,
   setResourceStatus,
 } from "@/lib/actions/resources";
+import { RESOURCE_FILES_BUCKET } from "@/lib/resources";
+import { createClient as createBrowserSupabase } from "@/lib/supabase/browser";
 import type {
   Resource,
   ResourceKind,
@@ -583,13 +587,17 @@ function PlayerDialog({
 
 function AddResourceDialog({ onClose }: { onClose: () => void }) {
   const resources = useStore((s) => s.resources);
+  const me = useStore(selectCurrentUser);
   const [kind, setKind] = useState<ResourceKind>("youtube");
+  const [pdfMode, setPdfMode] = useState<"upload" | "url">("upload");
   const [url, setUrl] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
+  const [, startTransition] = useTransition();
 
   const existingCategories = useMemo(() => {
     const set = new Set<string>();
@@ -597,12 +605,85 @@ function AddResourceDialog({ onClose }: { onClose: () => void }) {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [resources]);
 
-  const submit = () => {
+  const onFilePick = (f: File | null) => {
+    if (!f) {
+      setFile(null);
+      return;
+    }
+    if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
+      setError("Seuls les fichiers PDF sont acceptés.");
+      return;
+    }
+    if (f.size > 50 * 1024 * 1024) {
+      setError("Fichier trop lourd (max 50 Mo).");
+      return;
+    }
+    setError(null);
+    setFile(f);
+    if (!title.trim()) {
+      setTitle(f.name.replace(/\.pdf$/i, ""));
+    }
+  };
+
+  const submit = async () => {
+    setError(null);
+
+    if (kind === "pdf" && pdfMode === "upload") {
+      if (!file) {
+        setError("Sélectionne un fichier PDF.");
+        return;
+      }
+      setPending(true);
+      try {
+        const supabase = createBrowserSupabase();
+        const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
+        const safeId =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const path = `${me.id}/${safeId}.${ext}`;
+
+        const { error: upErr } = await supabase.storage
+          .from(RESOURCE_FILES_BUCKET)
+          .upload(path, file, {
+            contentType: "application/pdf",
+            upsert: false,
+          });
+        if (upErr) {
+          setPending(false);
+          setError(upErr.message || "Échec de l'upload.");
+          return;
+        }
+
+        const { data: pub } = supabase.storage
+          .from(RESOURCE_FILES_BUCKET)
+          .getPublicUrl(path);
+
+        const res = await addResource({
+          kind: "pdf",
+          url: pub.publicUrl,
+          storagePath: path,
+          title: title.trim() || undefined,
+          description: description.trim() || undefined,
+          category: category.trim() || undefined,
+        });
+        setPending(false);
+        if (!res.ok) {
+          setError(res.error ?? "Erreur lors de l'ajout.");
+          return;
+        }
+        onClose();
+      } catch (e) {
+        setPending(false);
+        setError(e instanceof Error ? e.message : "Erreur inattendue.");
+      }
+      return;
+    }
+
     if (!url.trim()) {
       setError("URL requise.");
       return;
     }
-    setError(null);
     startTransition(async () => {
       const res = await addResource({
         kind,
@@ -618,6 +699,10 @@ function AddResourceDialog({ onClose }: { onClose: () => void }) {
       onClose();
     });
   };
+
+  const submitDisabled =
+    pending ||
+    (kind === "pdf" && pdfMode === "upload" ? !file : !url.trim());
 
   return (
     <div
@@ -672,19 +757,88 @@ function AddResourceDialog({ onClose }: { onClose: () => void }) {
           })}
         </div>
 
-        <div className="text-[10.5px] text-text-3 uppercase tracking-[0.6px] font-mono mb-[6px]">
-          {kind === "youtube" ? "Lien YouTube" : "Lien PDF"}
-        </div>
-        <input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder={
-            kind === "youtube"
-              ? "https://www.youtube.com/watch?v=…"
-              : "https://example.com/doc.pdf"
-          }
-          className="w-full px-3 py-[10px] rounded-md bg-surface2 border border-border text-text text-[12.5px] outline-none mb-3 font-mono"
-        />
+        {kind === "pdf" && (
+          <div className="flex gap-[4px] bg-surface2 border border-border rounded-md p-[3px] mb-2">
+            {(["upload", "url"] as const).map((m) => {
+              const active = pdfMode === m;
+              const Icon = m === "upload" ? Upload : LinkIcon;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setPdfMode(m)}
+                  className={`flex-1 flex items-center justify-center gap-[6px] py-[7px] rounded-[5px] cursor-pointer text-[11.5px] border-0 ${
+                    active
+                      ? "bg-white/[0.07] text-text"
+                      : "bg-transparent text-text-3 hover:text-text-2"
+                  }`}
+                >
+                  <Icon size={12} strokeWidth={1.4} />
+                  {m === "upload" ? "Importer" : "Lien externe"}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {kind === "pdf" && pdfMode === "upload" ? (
+          <div className="mb-3">
+            <label
+              className={`flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-md border-2 border-dashed cursor-pointer transition-colors ${
+                file
+                  ? "border-border-strong bg-white/[0.03]"
+                  : "border-border bg-surface2 hover:border-border-strong hover:bg-white/[0.02]"
+              }`}
+            >
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                onChange={(e) => onFilePick(e.target.files?.[0] ?? null)}
+                className="hidden"
+              />
+              {file ? (
+                <>
+                  <FileText size={20} strokeWidth={1.3} className="text-text-2" />
+                  <div className="text-[12.5px] text-text font-medium truncate max-w-full">
+                    {file.name}
+                  </div>
+                  <div className="text-[10.5px] text-text-3 font-mono">
+                    {(file.size / (1024 * 1024)).toFixed(2)} Mo
+                  </div>
+                  <div className="text-[10.5px] text-text-4 mt-1">
+                    Cliquer pour changer de fichier
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Upload size={20} strokeWidth={1.3} className="text-text-3" />
+                  <div className="text-[12.5px] text-text-2">
+                    Glisse ou clique pour choisir un PDF
+                  </div>
+                  <div className="text-[10.5px] text-text-4 font-mono">
+                    PDF · jusqu&apos;à 50 Mo
+                  </div>
+                </>
+              )}
+            </label>
+          </div>
+        ) : (
+          <>
+            <div className="text-[10.5px] text-text-3 uppercase tracking-[0.6px] font-mono mb-[6px]">
+              {kind === "youtube" ? "Lien YouTube" : "Lien PDF"}
+            </div>
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder={
+                kind === "youtube"
+                  ? "https://www.youtube.com/watch?v=…"
+                  : "https://example.com/doc.pdf"
+              }
+              className="w-full px-3 py-[10px] rounded-md bg-surface2 border border-border text-text text-[12.5px] outline-none mb-3 font-mono"
+            />
+          </>
+        )}
 
         <div className="text-[10.5px] text-text-3 uppercase tracking-[0.6px] font-mono mb-[6px]">
           Titre
@@ -751,10 +905,14 @@ function AddResourceDialog({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={submit}
-          disabled={!url.trim() || pending}
+          disabled={submitDisabled}
           className="w-full py-[12px] rounded-md bg-text text-[#050505] border-0 text-[13px] font-medium cursor-pointer disabled:opacity-40"
         >
-          {pending ? "Ajout…" : "Ajouter à la bibliothèque"}
+          {pending
+            ? kind === "pdf" && pdfMode === "upload"
+              ? "Upload en cours…"
+              : "Ajout…"
+            : "Ajouter à la bibliothèque"}
         </button>
       </div>
     </div>

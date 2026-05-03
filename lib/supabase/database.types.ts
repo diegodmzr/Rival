@@ -245,6 +245,7 @@ export type Database = {
           url: string;
           youtube_id: string | null;
           thumbnail_url: string | null;
+          storage_path: string | null;
           added_by: string;
           created_at: string;
         };
@@ -257,6 +258,7 @@ export type Database = {
           url: string;
           youtube_id?: string | null;
           thumbnail_url?: string | null;
+          storage_path?: string | null;
           added_by: string;
           created_at?: string;
         };
@@ -269,6 +271,7 @@ export type Database = {
           url?: string;
           youtube_id?: string | null;
           thumbnail_url?: string | null;
+          storage_path?: string | null;
           added_by?: string;
           created_at?: string;
         };

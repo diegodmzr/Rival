@@ -58,6 +58,7 @@ export interface Resource {
   url: string;
   youtubeId: string | null;
   thumbnailUrl: string | null;
+  storagePath: string | null;
   addedBy: UserId;
   createdAt: string;
 }
