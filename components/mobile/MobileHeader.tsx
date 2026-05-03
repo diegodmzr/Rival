@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Play } from "lucide-react";
+import { Play, Library } from "lucide-react";
 import { useStore, selectCurrentUser, selectRivalUser } from "@/lib/store";
 import { formatShortHeaderDate } from "@/lib/date";
 import { Avatar } from "@/components/primitives/Avatar";
@@ -38,6 +38,13 @@ export function MobileHeader() {
         )}
       </div>
       <div className="flex gap-2 items-center">
+        <Link
+          href="/resources"
+          aria-label="Ressources"
+          className="w-[34px] h-[34px] rounded-full border border-border bg-surface text-text-2 grid place-items-center"
+        >
+          <Library size={14} strokeWidth={1.4} />
+        </Link>
         <button
           type="button"
           aria-label="Chrono"

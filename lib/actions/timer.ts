@@ -148,7 +148,9 @@ export async function stopTimerAndSave(
     ? Math.max(0, (Date.now() - new Date(row.started_at).getTime()) / 1000)
     : 0;
   const totalSec = elapsedBase + runningDelta;
-  let hours = Math.round((totalSec / 3600) * 4) / 4;
+  // Store the real elapsed time (rounded to the second) so short chronos
+  // aren't lost and totals stay precise. Display layers floor to 15 min.
+  let hours = Math.round(totalSec) / 3600;
 
   // Cap the saved hours at the rest-day remainder so a runaway timer
   // can't be "cashed out" past the cap.

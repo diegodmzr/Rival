@@ -1,7 +1,16 @@
 "use client";
 
 import { create } from "zustand";
-import type { DayRecap, Project, TimeEntry, TimerState, User, UserId } from "./types";
+import type {
+  DayRecap,
+  Project,
+  Resource,
+  ResourceView,
+  TimeEntry,
+  TimerState,
+  User,
+  UserId,
+} from "./types";
 import { todayISO } from "./date";
 
 export interface ServerSnapshot {
@@ -11,6 +20,8 @@ export interface ServerSnapshot {
   entries: TimeEntry[];
   timer: TimerState | null;
   recaps: DayRecap[];
+  resources: Resource[];
+  resourceViews: ResourceView[];
 }
 
 interface AppState {
@@ -20,6 +31,8 @@ interface AppState {
   projects: Project[];
   entries: TimeEntry[];
   recaps: DayRecap[];
+  resources: Resource[];
+  resourceViews: ResourceView[];
 
   // Local UI state
   timer: TimerState;
@@ -40,6 +53,10 @@ interface AppState {
   upsertRecap: (recap: DayRecap) => void;
   removeRecap: (id: string) => void;
   setLocalRecap: (date: string, note: string) => void;
+  upsertResource: (resource: Resource) => void;
+  removeResource: (id: string) => void;
+  upsertResourceView: (view: ResourceView) => void;
+  removeResourceView: (resourceId: string, userId: UserId) => void;
 
   // UI actions
   openQuickAdd: () => void;
@@ -70,6 +87,8 @@ export const useStore = create<AppState>()((set, get) => ({
   projects: [],
   entries: [],
   recaps: [],
+  resources: [],
+  resourceViews: [],
 
   timer: DEFAULT_TIMER,
   hydrated: false,
@@ -103,6 +122,8 @@ export const useStore = create<AppState>()((set, get) => ({
         projects: snap.projects,
         entries: snap.entries,
         recaps: snap.recaps,
+        resources: snap.resources,
+        resourceViews: snap.resourceViews,
         hydrated: true,
         timer: nextTimer,
       };
@@ -204,6 +225,39 @@ export const useStore = create<AppState>()((set, get) => ({
       next[idx] = { ...next[idx], note, updatedAt: new Date().toISOString() };
       return { recaps: next };
     }),
+
+  upsertResource: (resource) =>
+    set((s) => {
+      const idx = s.resources.findIndex((r) => r.id === resource.id);
+      if (idx === -1) return { resources: [resource, ...s.resources] };
+      const next = s.resources.slice();
+      next[idx] = resource;
+      return { resources: next };
+    }),
+
+  removeResource: (id) =>
+    set((s) => ({
+      resources: s.resources.filter((r) => r.id !== id),
+      resourceViews: s.resourceViews.filter((v) => v.resourceId !== id),
+    })),
+
+  upsertResourceView: (view) =>
+    set((s) => {
+      const idx = s.resourceViews.findIndex(
+        (v) => v.resourceId === view.resourceId && v.userId === view.userId,
+      );
+      if (idx === -1) return { resourceViews: [view, ...s.resourceViews] };
+      const next = s.resourceViews.slice();
+      next[idx] = view;
+      return { resourceViews: next };
+    }),
+
+  removeResourceView: (resourceId, userId) =>
+    set((s) => ({
+      resourceViews: s.resourceViews.filter(
+        (v) => !(v.resourceId === resourceId && v.userId === userId),
+      ),
+    })),
 
   openQuickAdd: () => set({ quickAddOpen: true }),
   closeQuickAdd: () => set({ quickAddOpen: false }),

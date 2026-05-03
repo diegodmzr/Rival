@@ -9,6 +9,7 @@ import {
   Folder,
   Clock,
   NotebookPen,
+  Library,
   Settings as SettingsIcon,
   ChevronDown,
   LogOut,
@@ -23,6 +24,7 @@ const NAV = [
   { href: "/projects", label: "Projets", Icon: Folder, match: (p: string) => p.startsWith("/projects") },
   { href: "/history", label: "Historique", Icon: Clock, match: (p: string) => p.startsWith("/history") },
   { href: "/recap", label: "Recap", Icon: NotebookPen, match: (p: string) => p.startsWith("/recap") },
+  { href: "/resources", label: "Ressources", Icon: Library, match: (p: string) => p.startsWith("/resources") },
   { href: "/settings", label: "Paramètres", Icon: SettingsIcon, match: (p: string) => p.startsWith("/settings") },
 ];
 

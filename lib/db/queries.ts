@@ -1,11 +1,22 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import type { DayRecap, Project, TimeEntry, TimerState, User, UserId } from "@/lib/types";
+import type {
+  DayRecap,
+  Project,
+  Resource,
+  ResourceView,
+  TimeEntry,
+  TimerState,
+  User,
+  UserId,
+} from "@/lib/types";
 import {
   mapEntryRow,
   mapProjectRow,
   mapRecapRow,
+  mapResourceRow,
+  mapResourceViewRow,
   mapTimerRow,
   mapUserRow,
 } from "@/lib/mappers";
@@ -104,6 +115,23 @@ export async function getRecaps(): Promise<DayRecap[]> {
   return data.map(mapRecapRow);
 }
 
+export async function getResources(): Promise<Resource[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("resources")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+  return data.map(mapResourceRow);
+}
+
+export async function getResourceViews(): Promise<ResourceView[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("resource_views").select("*");
+  if (error || !data) return [];
+  return data.map(mapResourceViewRow);
+}
+
 export interface DashboardData {
   currentUser: User;
   team: User[];
@@ -111,17 +139,39 @@ export interface DashboardData {
   entries: TimeEntry[];
   timer: TimerState | null;
   recaps: DayRecap[];
+  resources: Resource[];
+  resourceViews: ResourceView[];
 }
 
 export async function getDashboardData(): Promise<DashboardData | null> {
-  const [currentUser, team, projects, entries, timer, recaps] = await Promise.all([
+  const [
+    currentUser,
+    team,
+    projects,
+    entries,
+    timer,
+    recaps,
+    resources,
+    resourceViews,
+  ] = await Promise.all([
     getCurrentUser(),
     getAllUsers(),
     getProjects(),
     getEntries(),
     getActiveTimer(),
     getRecaps(),
+    getResources(),
+    getResourceViews(),
   ]);
   if (!currentUser) return null;
-  return { currentUser, team, projects, entries, timer, recaps };
+  return {
+    currentUser,
+    team,
+    projects,
+    entries,
+    timer,
+    recaps,
+    resources,
+    resourceViews,
+  };
 }

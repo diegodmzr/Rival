@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/primitives/Avatar";
 import { useStore } from "@/lib/store";
-import { fmt } from "@/lib/format";
+import { fmtExact } from "@/lib/format";
 import { formatRelativeDate } from "@/lib/date";
 import { deleteEntry } from "@/lib/actions/entries";
 import { EditEntryDialog } from "@/components/EditEntryDialog";
@@ -72,7 +72,7 @@ export function RecentCard() {
                     </div>
                   )}
                 </div>
-                <div className="font-mono text-[13px] text-text">{fmt(e.hours)}</div>
+                <div className="font-mono text-[13px] text-text">{fmtExact(e.hours)}</div>
                 {mine ? (
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button

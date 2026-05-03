@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { Download, Pencil, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { Avatar } from "@/components/primitives/Avatar";
-import { fmt } from "@/lib/format";
+import { fmt, fmtExact } from "@/lib/format";
 import { formatRelativeDate, parseISODate } from "@/lib/date";
 import { exportEntriesCSV } from "@/lib/export";
 import { deleteEntry } from "@/lib/actions/entries";
@@ -199,7 +199,7 @@ export function HistoryContent() {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="font-mono text-[13px] text-text min-w-[40px] text-right">
-                        {fmt(e.hours)}
+                        {fmtExact(e.hours)}
                       </div>
                       {mine ? (
                         <div className="flex items-center gap-[6px] md:gap-1 md:opacity-0 md:group-hover:opacity-100 md:transition-opacity">

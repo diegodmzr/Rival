@@ -8,11 +8,15 @@ import {
   mapEntryRow,
   mapProjectRow,
   mapRecapRow,
+  mapResourceRow,
+  mapResourceViewRow,
   mapTimerRow,
   mapUserRow,
   type EntryRow,
   type ProjectRow,
   type RecapRow,
+  type ResourceRow,
+  type ResourceViewRow,
   type TimerRow,
   type UserRow,
 } from "@/lib/mappers";
@@ -74,6 +78,34 @@ export function RealtimeSync({ userId }: { userId: string }) {
       useStore.getState().upsertRecap(mapRecapRow(row));
     };
 
+    const onResource = (payload: RealtimePostgresChangesPayload<ResourceRow>) => {
+      if (payload.eventType === "DELETE") {
+        const id = (payload.old as { id?: string } | undefined)?.id;
+        if (id) useStore.getState().removeResource(id);
+        return;
+      }
+      const row = payload.new as ResourceRow | undefined;
+      if (!row) return;
+      useStore.getState().upsertResource(mapResourceRow(row));
+    };
+
+    const onResourceView = (
+      payload: RealtimePostgresChangesPayload<ResourceViewRow>,
+    ) => {
+      if (payload.eventType === "DELETE") {
+        const old = payload.old as
+          | { resource_id?: string; user_id?: string }
+          | undefined;
+        if (old?.resource_id && old.user_id) {
+          useStore.getState().removeResourceView(old.resource_id, old.user_id);
+        }
+        return;
+      }
+      const row = payload.new as ResourceViewRow | undefined;
+      if (!row) return;
+      useStore.getState().upsertResourceView(mapResourceViewRow(row));
+    };
+
     const channel = supabase
       .channel(`app-sync:${userId}`)
       .on(
@@ -105,6 +137,16 @@ export function RealtimeSync({ userId }: { userId: string }) {
         "postgres_changes",
         { event: "*", schema: "public", table: "day_recaps" },
         onRecap,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "resources" },
+        onResource,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "resource_views" },
+        onResourceView,
       );
 
     // Make sure the realtime connection carries the user's JWT so RLS-filtered

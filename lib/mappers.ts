@@ -1,4 +1,12 @@
-import type { DayRecap, Project, TimeEntry, TimerState, User } from "./types";
+import type {
+  DayRecap,
+  Project,
+  Resource,
+  ResourceView,
+  TimeEntry,
+  TimerState,
+  User,
+} from "./types";
 
 export interface UserRow {
   id: string;
@@ -93,6 +101,50 @@ export function mapTimerRow(row: TimerRow): TimerState {
     startedAt: row.started_at,
     elapsedBase: Number(row.elapsed_base_sec),
     projectId: row.project_id ?? "",
+  };
+}
+
+export interface ResourceRow {
+  id: string;
+  kind: "youtube" | "pdf";
+  title: string;
+  description: string | null;
+  category: string | null;
+  url: string;
+  youtube_id: string | null;
+  thumbnail_url: string | null;
+  added_by: string;
+  created_at: string;
+}
+
+export interface ResourceViewRow {
+  resource_id: string;
+  user_id: string;
+  status: "watched" | "rewatch";
+  updated_at: string;
+}
+
+export function mapResourceRow(row: ResourceRow): Resource {
+  return {
+    id: row.id,
+    kind: row.kind,
+    title: row.title,
+    description: row.description ?? "",
+    category: row.category ?? "",
+    url: row.url,
+    youtubeId: row.youtube_id,
+    thumbnailUrl: row.thumbnail_url,
+    addedBy: row.added_by,
+    createdAt: row.created_at,
+  };
+}
+
+export function mapResourceViewRow(row: ResourceViewRow): ResourceView {
+  return {
+    resourceId: row.resource_id,
+    userId: row.user_id,
+    status: row.status,
+    updatedAt: row.updated_at,
   };
 }
 

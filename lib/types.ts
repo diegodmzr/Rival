@@ -45,3 +45,26 @@ export interface DayRecap {
   note: string;
   updatedAt: string; // ISO
 }
+
+export type ResourceKind = "youtube" | "pdf";
+export type ResourceStatus = "to_watch" | "watched" | "rewatch";
+
+export interface Resource {
+  id: string;
+  kind: ResourceKind;
+  title: string;
+  description: string;
+  category: string;
+  url: string;
+  youtubeId: string | null;
+  thumbnailUrl: string | null;
+  addedBy: UserId;
+  createdAt: string;
+}
+
+export interface ResourceView {
+  resourceId: string;
+  userId: UserId;
+  status: Exclude<ResourceStatus, "to_watch">;
+  updatedAt: string;
+}

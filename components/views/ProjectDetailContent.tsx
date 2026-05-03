@@ -7,7 +7,7 @@ import { useStore, selectCurrentUser, selectRivalUser } from "@/lib/store";
 import { Avatar } from "@/components/primitives/Avatar";
 import { LineChart } from "@/components/primitives/LineChart";
 import { dailySeries } from "@/lib/compute";
-import { fmt, fmtParts } from "@/lib/format";
+import { fmt, fmtExact, fmtParts } from "@/lib/format";
 import { formatRelativeDate } from "@/lib/date";
 import { deleteEntry } from "@/lib/actions/entries";
 import { EditEntryDialog } from "@/components/EditEntryDialog";
@@ -149,7 +149,7 @@ export function ProjectDetailContent({ id }: { id: string }) {
               </div>
               <div className="flex items-center gap-2">
                 <div className="font-mono text-[13px] text-text min-w-[40px] text-right">
-                  {fmt(e.hours)}
+                  {fmtExact(e.hours)}
                 </div>
                 {mine ? (
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

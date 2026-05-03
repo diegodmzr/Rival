@@ -235,6 +235,86 @@ export type Database = {
           },
         ];
       };
+      resources: {
+        Row: {
+          id: string;
+          kind: "youtube" | "pdf";
+          title: string;
+          description: string;
+          category: string;
+          url: string;
+          youtube_id: string | null;
+          thumbnail_url: string | null;
+          added_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          kind: "youtube" | "pdf";
+          title: string;
+          description?: string;
+          category?: string;
+          url: string;
+          youtube_id?: string | null;
+          thumbnail_url?: string | null;
+          added_by: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          kind?: "youtube" | "pdf";
+          title?: string;
+          description?: string;
+          category?: string;
+          url?: string;
+          youtube_id?: string | null;
+          thumbnail_url?: string | null;
+          added_by?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "resources_added_by_fkey";
+            columns: ["added_by"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      resource_views: {
+        Row: {
+          resource_id: string;
+          user_id: string;
+          status: "watched" | "rewatch";
+          updated_at: string;
+        };
+        Insert: {
+          resource_id: string;
+          user_id: string;
+          status: "watched" | "rewatch";
+          updated_at?: string;
+        };
+        Update: {
+          resource_id?: string;
+          user_id?: string;
+          status?: "watched" | "rewatch";
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "resource_views_resource_id_fkey";
+            columns: ["resource_id"];
+            referencedRelation: "resources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "resource_views_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };

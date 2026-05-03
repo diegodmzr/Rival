@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Avatar } from "@/components/primitives/Avatar";
 import { useStore } from "@/lib/store";
-import { fmt } from "@/lib/format";
+import { fmtExact } from "@/lib/format";
 import { formatRelativeDate } from "@/lib/date";
 
 export function MobileRecent() {
@@ -48,7 +48,7 @@ export function MobileRecent() {
                   {formatRelativeDate(e.date, e.createdAt)}
                 </div>
               </div>
-              <div className="font-mono text-[12.5px] text-text">{fmt(e.hours)}</div>
+              <div className="font-mono text-[12.5px] text-text">{fmtExact(e.hours)}</div>
             </div>
           );
         })}
