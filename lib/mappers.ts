@@ -1,8 +1,12 @@
 import type {
   DayRecap,
+  EntryTaskLink,
   Project,
   Resource,
   ResourceView,
+  Task,
+  TaskPriority,
+  TaskStatus,
   TimeEntry,
   TimerState,
   User,
@@ -158,4 +162,51 @@ export function mapRecapRow(row: RecapRow): DayRecap {
     note: row.note ?? "",
     updatedAt: row.updated_at,
   };
+}
+
+export interface TaskRow {
+  id: string;
+  project_id: string | null;
+  parent_task_id: string | null;
+  title: string;
+  description: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  due_date: string | null;
+  assigned_user_id: string | null;
+  created_by: string;
+  completed_by: string | null;
+  completed_at: string | null;
+  position: number | string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EntryTaskRow {
+  entry_id: string;
+  task_id: string;
+}
+
+export function mapTaskRow(row: TaskRow): Task {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    parentTaskId: row.parent_task_id,
+    title: row.title,
+    description: row.description ?? "",
+    status: row.status,
+    priority: row.priority,
+    dueDate: row.due_date,
+    assignedUserId: row.assigned_user_id,
+    createdBy: row.created_by,
+    completedBy: row.completed_by,
+    completedAt: row.completed_at,
+    position: Number(row.position),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function mapEntryTaskRow(row: EntryTaskRow): EntryTaskLink {
+  return { entryId: row.entry_id, taskId: row.task_id };
 }

@@ -233,6 +233,46 @@ export async function notifyStaleTimers() {
   );
 }
 
+const TASK_COMPLETED_VARIANTS: ((c: { name: string; task: string; project: string }) => { title: string; body: string })[] = [
+  (c) => ({ title: `${c.name} a coché "${c.task}".`, body: `Sur ${c.project}. À toi.` }),
+  (c) => ({ title: `${c.name} vient de finir "${c.task}".`, body: `Pendant que tu fais quoi ?` }),
+  (c) => ({ title: `Une tâche de moins pour ${c.name}.`, body: `"${c.task}" — terminée.` }),
+  (c) => ({ title: `${c.name} avance.`, body: `"${c.task}" faite sur ${c.project}.` }),
+];
+
+// Triggered when a task on a shared (non-personal) project is marked done.
+// Notifies the rival(s).
+export async function notifyTaskCompleted(params: {
+  actorUserId: string;
+  projectName: string;
+  taskTitle: string;
+}) {
+  fireAndForget(
+    (async () => {
+      const admin = createAdminClient();
+      const { data: team } = await admin.from("users").select("id, name");
+      if (!team) return;
+      const actor = team.find((u) => u.id === params.actorUserId);
+      const others = team.filter((u) => u.id !== params.actorUserId);
+      if (!actor || others.length === 0) return;
+
+      for (const other of others) {
+        const msg = pickRandom(TASK_COMPLETED_VARIANTS)({
+          name: actor.name,
+          task: params.taskTitle,
+          project: params.projectName,
+        });
+        await sendPushToUser(other.id, {
+          title: msg.title,
+          body: msg.body,
+          url: "/tasks",
+          tag: "task-completed",
+        });
+      }
+    })(),
+  );
+}
+
 function weekStartISO() {
   // ISO week: Monday as day 0.
   const dayIdx = (new Date().getDay() + 6) % 7;

@@ -3,9 +3,11 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type {
   DayRecap,
+  EntryTaskLink,
   Project,
   Resource,
   ResourceView,
+  Task,
   TimeEntry,
   TimerState,
   User,
@@ -13,10 +15,12 @@ import type {
 } from "@/lib/types";
 import {
   mapEntryRow,
+  mapEntryTaskRow,
   mapProjectRow,
   mapRecapRow,
   mapResourceRow,
   mapResourceViewRow,
+  mapTaskRow,
   mapTimerRow,
   mapUserRow,
 } from "@/lib/mappers";
@@ -132,6 +136,26 @@ export async function getResourceViews(): Promise<ResourceView[]> {
   return data.map(mapResourceViewRow);
 }
 
+export async function getTasks(): Promise<Task[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .order("position", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (error || !data) return [];
+  return data.map(mapTaskRow);
+}
+
+export async function getEntryTasks(): Promise<EntryTaskLink[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("entry_tasks")
+    .select("entry_id, task_id");
+  if (error || !data) return [];
+  return data.map(mapEntryTaskRow);
+}
+
 export interface DashboardData {
   currentUser: User;
   team: User[];
@@ -141,6 +165,8 @@ export interface DashboardData {
   recaps: DayRecap[];
   resources: Resource[];
   resourceViews: ResourceView[];
+  tasks: Task[];
+  entryTasks: EntryTaskLink[];
 }
 
 export async function getDashboardData(): Promise<DashboardData | null> {
@@ -153,6 +179,8 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     recaps,
     resources,
     resourceViews,
+    tasks,
+    entryTasks,
   ] = await Promise.all([
     getCurrentUser(),
     getAllUsers(),
@@ -162,6 +190,8 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     getRecaps(),
     getResources(),
     getResourceViews(),
+    getTasks(),
+    getEntryTasks(),
   ]);
   if (!currentUser) return null;
   return {
@@ -173,5 +203,7 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     recaps,
     resources,
     resourceViews,
+    tasks,
+    entryTasks,
   };
 }

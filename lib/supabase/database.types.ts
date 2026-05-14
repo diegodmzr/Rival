@@ -318,6 +318,122 @@ export type Database = {
           },
         ];
       };
+      tasks: {
+        Row: {
+          id: string;
+          project_id: string | null;
+          parent_task_id: string | null;
+          title: string;
+          description: string;
+          status: "todo" | "in_progress" | "done";
+          priority: "low" | "normal" | "high";
+          due_date: string | null;
+          assigned_user_id: string | null;
+          created_by: string;
+          completed_by: string | null;
+          completed_at: string | null;
+          position: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id?: string | null;
+          parent_task_id?: string | null;
+          title: string;
+          description?: string;
+          status?: "todo" | "in_progress" | "done";
+          priority?: "low" | "normal" | "high";
+          due_date?: string | null;
+          assigned_user_id?: string | null;
+          created_by: string;
+          completed_by?: string | null;
+          completed_at?: string | null;
+          position?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string | null;
+          parent_task_id?: string | null;
+          title?: string;
+          description?: string;
+          status?: "todo" | "in_progress" | "done";
+          priority?: "low" | "normal" | "high";
+          due_date?: string | null;
+          assigned_user_id?: string | null;
+          created_by?: string;
+          completed_by?: string | null;
+          completed_at?: string | null;
+          position?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tasks_project_id_fkey";
+            columns: ["project_id"];
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey";
+            columns: ["parent_task_id"];
+            referencedRelation: "tasks";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tasks_assigned_user_id_fkey";
+            columns: ["assigned_user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey";
+            columns: ["created_by"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tasks_completed_by_fkey";
+            columns: ["completed_by"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      entry_tasks: {
+        Row: {
+          entry_id: string;
+          task_id: string;
+          created_at: string;
+        };
+        Insert: {
+          entry_id: string;
+          task_id: string;
+          created_at?: string;
+        };
+        Update: {
+          entry_id?: string;
+          task_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "entry_tasks_entry_id_fkey";
+            columns: ["entry_id"];
+            referencedRelation: "time_entries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "entry_tasks_task_id_fkey";
+            columns: ["task_id"];
+            referencedRelation: "tasks";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
@@ -329,3 +445,5 @@ export type Database = {
 export type UserRow = Database["public"]["Tables"]["users"]["Row"];
 export type ProjectRow = Database["public"]["Tables"]["projects"]["Row"];
 export type TimeEntryRow = Database["public"]["Tables"]["time_entries"]["Row"];
+export type TaskRow = Database["public"]["Tables"]["tasks"]["Row"];
+export type EntryTaskRow = Database["public"]["Tables"]["entry_tasks"]["Row"];

@@ -69,3 +69,29 @@ export interface ResourceView {
   status: Exclude<ResourceStatus, "to_watch">;
   updatedAt: string;
 }
+
+export type TaskStatus = "todo" | "in_progress" | "done";
+export type TaskPriority = "low" | "normal" | "high";
+
+export interface Task {
+  id: string;
+  projectId: string | null;
+  parentTaskId: string | null;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate: string | null;
+  assignedUserId: UserId | null;
+  createdBy: UserId;
+  completedBy: UserId | null;
+  completedAt: string | null;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EntryTaskLink {
+  entryId: string;
+  taskId: string;
+}
