@@ -11,6 +11,7 @@ import { fmt, fmtExact, fmtParts } from "@/lib/format";
 import { formatRelativeDate } from "@/lib/date";
 import { deleteEntry } from "@/lib/actions/entries";
 import { EditEntryDialog } from "@/components/EditEntryDialog";
+import { TasksSection } from "@/components/views/tasks/TasksSection";
 import type { TimeEntry } from "@/lib/types";
 
 export function ProjectDetailContent({ id }: { id: string }) {
@@ -104,6 +105,11 @@ export function ProjectDetailContent({ id }: { id: string }) {
             </div>
           );
         })}
+      </div>
+
+      <div className="bg-surface border border-border rounded-md px-[18px] py-4 mb-[14px]">
+        <div className="text-[13px] text-text font-medium mb-3">Tâches</div>
+        <TasksSection scope={{ projectId: id }} />
       </div>
 
       <div className="bg-surface border border-border rounded-md px-[18px] py-4 mb-[14px]">

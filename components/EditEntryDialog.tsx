@@ -6,7 +6,9 @@ import { useStore } from "@/lib/store";
 import { fmt, fmtParts } from "@/lib/format";
 import { todayISO } from "@/lib/date";
 import { updateEntry } from "@/lib/actions/entries";
+import { linkEntryTasks } from "@/lib/actions/tasks";
 import { CATEGORIES } from "@/lib/categories";
+import { LinkTasksControl } from "@/components/views/tasks/LinkTasksControl";
 import type { TimeEntry } from "@/lib/types";
 
 const PRESETS = [0.5, 1, 1.5, 2, 4, 8];
@@ -19,12 +21,14 @@ export function EditEntryDialog({
   onClose: () => void;
 }) {
   const projects = useStore((s) => s.projects);
+  const entryTasksMap = useStore((s) => s.entryTasks);
 
   const [h, setH] = useState(0);
   const [projectId, setProjectId] = useState("");
   const [category, setCategory] = useState<string>("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(todayISO());
+  const [taskIds, setTaskIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -35,8 +39,9 @@ export function EditEntryDialog({
     setCategory(entry.category ?? "");
     setNote(entry.note);
     setDate(entry.date);
+    setTaskIds(entryTasksMap[entry.id] ?? []);
     setError(null);
-  }, [entry]);
+  }, [entry, entryTasksMap]);
 
   if (!entry) return null;
 
@@ -57,6 +62,7 @@ export function EditEntryDialog({
         setError(res.error ?? "Erreur lors de la mise à jour.");
         return;
       }
+      await linkEntryTasks(entry.id, taskIds);
       onClose();
     });
   };
@@ -202,6 +208,14 @@ export function EditEntryDialog({
             onChange={(e) => setNote(e.target.value)}
             placeholder="Note optionnelle…"
             className="w-full px-3 py-[11px] rounded-lg bg-surface2 border border-border text-text text-[13px] outline-none"
+          />
+        </div>
+
+        <div className="mb-4">
+          <LinkTasksControl
+            projectId={projectId || null}
+            value={taskIds}
+            onChange={setTaskIds}
           />
         </div>
 

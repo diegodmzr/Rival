@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BarChart3, Clock, Folder, Plus } from "lucide-react";
+import { Home, BarChart3, CheckSquare, Folder, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
 import { pad2 } from "@/lib/format";
@@ -13,7 +13,7 @@ const NAV_LEFT = [
 ];
 
 const NAV_RIGHT = [
-  { id: "hist", href: "/history", Icon: Clock, label: "Hist." },
+  { id: "tasks", href: "/tasks", Icon: CheckSquare, label: "Tâches" },
   { id: "proj", href: "/projects", Icon: Folder, label: "Projets" },
 ];
 

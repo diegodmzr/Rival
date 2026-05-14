@@ -12,6 +12,8 @@ import { StreakCard } from "@/components/desktop/StreakCard";
 import { RecentCard } from "@/components/desktop/RecentCard";
 import { BadgesCard } from "@/components/desktop/BadgesCard";
 import { RecapPromptCard } from "@/components/desktop/RecapPromptCard";
+import { TasksTodayCard } from "@/components/desktop/TasksTodayCard";
+import { MobileTasksToday } from "@/components/mobile/MobileTasksToday";
 import { RestDayBanner } from "@/components/RestDayBanner";
 import { MobileInsight } from "@/components/mobile/MobileInsight";
 import { MobileMetricRow } from "@/components/mobile/MobileMetricRow";
@@ -70,6 +72,9 @@ export function DashboardContent() {
             <ChartCard />
             <StreakCard />
           </div>
+          <div className="mb-[14px]">
+            <TasksTodayCard />
+          </div>
           <RecentCard />
           <div className="h-6" />
         </div>
@@ -86,6 +91,7 @@ export function DashboardContent() {
         <MobileVersus />
         <MobileChart />
         <MobileStreak />
+        <MobileTasksToday />
         <MobileRecent />
       </div>
     </>

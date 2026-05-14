@@ -2,7 +2,7 @@
 
 import { Trophy } from "lucide-react";
 import { Avatar } from "@/components/primitives/Avatar";
-import { useStore } from "@/lib/store";
+import { useStore, selectRivalTasksSummary } from "@/lib/store";
 import { weekHours } from "@/lib/compute";
 import { fmt, pct } from "@/lib/format";
 import { versusLabel } from "@/lib/homeCopy";
@@ -20,6 +20,7 @@ export function VersusCard() {
   const rows = [currentUserId, rivalId];
   const goal = users[currentUserId].weeklyGoal;
   const label = versusLabel({ diff, rivalName: users[rivalId]?.name ?? "" });
+  const tasksSummary = useStore(selectRivalTasksSummary(rivalId));
 
   return (
     <div className="bg-surface border border-border rounded-md px-[18px] py-4 flex flex-col gap-[14px] col-span-2">
@@ -86,6 +87,16 @@ export function VersusCard() {
           {pct(meWeek / goal)} atteint
         </span>
       </div>
+
+      {(tasksSummary.inProgress > 0 || tasksSummary.doneThisWeek > 0) && (
+        <div className="text-[10.5px] text-text-3 -mt-1">
+          {users[rivalId]?.name} ·{" "}
+          <span className="font-mono">{tasksSummary.inProgress}</span> tâche
+          {tasksSummary.inProgress > 1 ? "s" : ""} en cours ·{" "}
+          <span className="font-mono">{tasksSummary.doneThisWeek}</span>{" "}
+          terminée{tasksSummary.doneThisWeek > 1 ? "s" : ""} cette semaine
+        </div>
+      )}
     </div>
   );
 }

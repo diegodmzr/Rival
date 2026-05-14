@@ -12,6 +12,7 @@ import {
   stopTimerAndSave,
 } from "@/lib/actions/timer";
 import { FloatingTimerButton } from "./FloatingTimerWindow";
+import { StopTimerDialog } from "@/components/views/tasks/StopTimerDialog";
 
 export function TimerBar() {
   const timer = useStore((s) => s.timer);
@@ -25,6 +26,7 @@ export function TimerBar() {
 
   const [, setTick] = useState(0);
   const [pending, startTransition] = useTransition();
+  const [stopOpen, setStopOpen] = useState(false);
 
   useEffect(() => {
     if (!timer.running) return;
@@ -56,11 +58,17 @@ export function TimerBar() {
   };
 
   const stopAndSave = () => {
-    localPause();
+    if (timer.running) {
+      localPause();
+      startTransition(async () => {
+        await pauseTimerAction();
+      });
+    }
+    setStopOpen(true);
+  };
+
+  const onSaved = () => {
     localReset();
-    startTransition(async () => {
-      await stopTimerAndSave(todayISO());
-    });
   };
 
   const onProjectChange = (projectId: string) => {
@@ -121,6 +129,13 @@ export function TimerBar() {
         </button>
       )}
       <FloatingTimerButton />
+      <StopTimerDialog
+        open={stopOpen}
+        onClose={() => setStopOpen(false)}
+        projectId={project?.id ?? null}
+        elapsedHours={elapsed / 3600}
+        onSaved={onSaved}
+      />
     </div>
   );
 }

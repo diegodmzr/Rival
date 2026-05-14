@@ -1,7 +1,7 @@
 "use client";
 
 import { Avatar } from "@/components/primitives/Avatar";
-import { useStore, selectCurrentUser, selectRivalUser } from "@/lib/store";
+import { useStore, selectCurrentUser, selectRivalUser, selectRivalTasksSummary } from "@/lib/store";
 import { weekHours } from "@/lib/compute";
 import { weekNumber } from "@/lib/date";
 import { fmt, pct } from "@/lib/format";
@@ -16,6 +16,7 @@ export function MobileVersus() {
   const max = Math.max(mine, theirs, 0.01);
   const rows = [me, rival];
   const week = weekNumber();
+  const tasksSummary = useStore(selectRivalTasksSummary(rival.id));
 
   return (
     <div className="mx-4 mb-[14px] px-4 py-[14px] bg-surface border border-border rounded-lg">
@@ -66,6 +67,14 @@ export function MobileVersus() {
           </span>
         </span>
       </div>
+      {(tasksSummary.inProgress > 0 || tasksSummary.doneThisWeek > 0) && (
+        <div className="mt-2 text-[10.5px] text-text-3">
+          {rival.name} ·{" "}
+          <span className="font-mono">{tasksSummary.inProgress}</span> en cours ·{" "}
+          <span className="font-mono">{tasksSummary.doneThisWeek}</span> faite
+          {tasksSummary.doneThisWeek > 1 ? "s" : ""} cette semaine
+        </div>
+      )}
     </div>
   );
 }

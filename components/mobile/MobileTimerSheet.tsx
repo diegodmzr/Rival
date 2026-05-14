@@ -4,13 +4,12 @@ import { useEffect, useState, useTransition } from "react";
 import { Play, Pause, Square, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { pad2 } from "@/lib/format";
-import { todayISO } from "@/lib/date";
 import {
   startTimer as startTimerAction,
   pauseTimer as pauseTimerAction,
   setTimerProject as setTimerProjectAction,
-  stopTimerAndSave,
 } from "@/lib/actions/timer";
+import { StopTimerDialog } from "@/components/views/tasks/StopTimerDialog";
 
 export function MobileTimerSheet() {
   const open = useStore((s) => s.mobileTimerOpen);
@@ -26,6 +25,7 @@ export function MobileTimerSheet() {
   const [, setTick] = useState(0);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [stopOpen, setStopOpen] = useState(false);
 
   useEffect(() => {
     if (!open || !timer.running) return;
@@ -68,13 +68,18 @@ export function MobileTimerSheet() {
 
   const stopAndSave = () => {
     setError(null);
-    localPause();
+    if (timer.running) {
+      localPause();
+      startTransition(async () => {
+        await pauseTimerAction();
+      });
+    }
+    setStopOpen(true);
+  };
+
+  const onStopSaved = () => {
     localReset();
-    startTransition(async () => {
-      const res = await stopTimerAndSave(todayISO());
-      if (!res.ok) setError(res.error ?? "Erreur.");
-      else close();
-    });
+    close();
   };
 
   const onProjectChange = (projectId: string) => {
@@ -204,6 +209,13 @@ export function MobileTimerSheet() {
           )}
         </div>
       </div>
+      <StopTimerDialog
+        open={stopOpen}
+        onClose={() => setStopOpen(false)}
+        projectId={project?.id ?? null}
+        elapsedHours={elapsed / 3600}
+        onSaved={onStopSaved}
+      />
     </div>
   );
 }
