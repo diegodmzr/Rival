@@ -3,15 +3,22 @@
 import { create } from "zustand";
 import type {
   DayRecap,
+  EntryTaskLink,
   Project,
   Resource,
   ResourceView,
+  Task,
+  TaskPriority,
+  TaskStatus,
   TimeEntry,
   TimerState,
   User,
   UserId,
 } from "./types";
 import { todayISO } from "./date";
+
+export type TasksView = "list" | "kanban" | "calendar";
+export type TasksCalendarMode = "week" | "month";
 
 export interface ServerSnapshot {
   currentUser: User;
@@ -22,6 +29,8 @@ export interface ServerSnapshot {
   recaps: DayRecap[];
   resources: Resource[];
   resourceViews: ResourceView[];
+  tasks: Task[];
+  entryTasks: EntryTaskLink[];
 }
 
 interface AppState {
@@ -33,12 +42,16 @@ interface AppState {
   recaps: DayRecap[];
   resources: Resource[];
   resourceViews: ResourceView[];
+  tasks: Task[];
+  entryTasks: Record<string, string[]>;
 
   // Local UI state
   timer: TimerState;
   hydrated: boolean;
   quickAddOpen: boolean;
   mobileTimerOpen: boolean;
+  tasksView: TasksView;
+  tasksCalendarMode: TasksCalendarMode;
 
   // Hydration (called by StoreHydrator on every server re-render)
   hydrate: (snapshot: ServerSnapshot) => void;
@@ -57,6 +70,12 @@ interface AppState {
   removeResource: (id: string) => void;
   upsertResourceView: (view: ResourceView) => void;
   removeResourceView: (resourceId: string, userId: UserId) => void;
+  upsertTask: (task: Task) => void;
+  updateTaskLocal: (id: string, patch: Partial<Task>) => void;
+  removeTask: (id: string) => void;
+  setEntryTasksLocal: (entryId: string, taskIds: string[]) => void;
+  setTasksView: (v: TasksView) => void;
+  setTasksCalendarMode: (m: TasksCalendarMode) => void;
 
   // UI actions
   openQuickAdd: () => void;
@@ -89,11 +108,15 @@ export const useStore = create<AppState>()((set, get) => ({
   recaps: [],
   resources: [],
   resourceViews: [],
+  tasks: [],
+  entryTasks: {},
 
   timer: DEFAULT_TIMER,
   hydrated: false,
   quickAddOpen: false,
   mobileTimerOpen: false,
+  tasksView: "list",
+  tasksCalendarMode: "week",
 
   hydrate: (snap) =>
     set((s) => {
@@ -116,6 +139,11 @@ export const useStore = create<AppState>()((set, get) => ({
             projectId: resolveProjectId(s.timer.projectId),
           };
 
+      const entryTasksMap: Record<string, string[]> = {};
+      for (const link of snap.entryTasks) {
+        (entryTasksMap[link.entryId] ||= []).push(link.taskId);
+      }
+
       return {
         currentUserId: snap.currentUser.id,
         users: Object.fromEntries(snap.team.map((u) => [u.id, u])),
@@ -124,6 +152,8 @@ export const useStore = create<AppState>()((set, get) => ({
         recaps: snap.recaps,
         resources: snap.resources,
         resourceViews: snap.resourceViews,
+        tasks: snap.tasks,
+        entryTasks: entryTasksMap,
         hydrated: true,
         timer: nextTimer,
       };
@@ -259,6 +289,57 @@ export const useStore = create<AppState>()((set, get) => ({
       ),
     })),
 
+  upsertTask: (task) =>
+    set((s) => {
+      const idx = s.tasks.findIndex((t) => t.id === task.id);
+      if (idx === -1) return { tasks: [...s.tasks, task] };
+      const next = s.tasks.slice();
+      next[idx] = task;
+      return { tasks: next };
+    }),
+
+  updateTaskLocal: (id, patch) =>
+    set((s) => {
+      const idx = s.tasks.findIndex((t) => t.id === id);
+      if (idx === -1) return s;
+      const next = s.tasks.slice();
+      next[idx] = { ...next[idx], ...patch, updatedAt: new Date().toISOString() };
+      return { tasks: next };
+    }),
+
+  removeTask: (id) =>
+    set((s) => {
+      const remainingTasks = s.tasks.filter((t) => t.id !== id && t.parentTaskId !== id);
+      const nextEntryTasks: Record<string, string[]> = {};
+      for (const [entryId, taskIds] of Object.entries(s.entryTasks)) {
+        const filtered = taskIds.filter((tid) => tid !== id);
+        if (filtered.length > 0) nextEntryTasks[entryId] = filtered;
+      }
+      return { tasks: remainingTasks, entryTasks: nextEntryTasks };
+    }),
+
+  setEntryTasksLocal: (entryId, taskIds) =>
+    set((s) => {
+      const next = { ...s.entryTasks };
+      if (taskIds.length === 0) delete next[entryId];
+      else next[entryId] = taskIds;
+      return { entryTasks: next };
+    }),
+
+  setTasksView: (v) => {
+    if (typeof window !== "undefined") {
+      try { window.localStorage.setItem("rival.tasksView", v); } catch {}
+    }
+    set({ tasksView: v });
+  },
+
+  setTasksCalendarMode: (m) => {
+    if (typeof window !== "undefined") {
+      try { window.localStorage.setItem("rival.tasksCalendarMode", m); } catch {}
+    }
+    set({ tasksCalendarMode: m });
+  },
+
   openQuickAdd: () => set({ quickAddOpen: true }),
   closeQuickAdd: () => set({ quickAddOpen: false }),
   openMobileTimer: () => set({ mobileTimerOpen: true }),
@@ -323,6 +404,110 @@ export const selectRivalUser = (s: AppState) => {
   const others = Object.values(s.users).filter((u) => u.id !== s.currentUserId);
   return others[0] ?? s.users[s.currentUserId];
 };
+
+const STATUS_RANK: Record<TaskStatus, number> = {
+  in_progress: 0,
+  todo: 1,
+  done: 2,
+};
+const PRIORITY_RANK: Record<TaskPriority, number> = {
+  high: 0,
+  normal: 1,
+  low: 2,
+};
+
+export function compareTasks(a: Task, b: Task): number {
+  const s = STATUS_RANK[a.status] - STATUS_RANK[b.status];
+  if (s !== 0) return s;
+  const p = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
+  if (p !== 0) return p;
+  if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+  if (a.dueDate) return -1;
+  if (b.dueDate) return 1;
+  return a.position - b.position;
+}
+
+export const selectTasksForProject =
+  (projectId: string | null) =>
+  (s: AppState): Task[] =>
+    s.tasks
+      .filter((t) => t.projectId === projectId && t.parentTaskId === null)
+      .sort(compareTasks);
+
+export const selectSubtasks =
+  (parentId: string) =>
+  (s: AppState): Task[] =>
+    s.tasks.filter((t) => t.parentTaskId === parentId).sort(compareTasks);
+
+export const selectFreeTasks =
+  (userId: UserId) =>
+  (s: AppState): Task[] =>
+    s.tasks
+      .filter(
+        (t) =>
+          t.projectId === null &&
+          t.createdBy === userId &&
+          t.parentTaskId === null,
+      )
+      .sort(compareTasks);
+
+export const selectTodayTasks =
+  (userId: UserId) =>
+  (s: AppState): Task[] => {
+    const today = todayISO();
+    return s.tasks
+      .filter((t) => {
+        if (t.status === "done") return false;
+        if (t.parentTaskId !== null) return false;
+        if (t.assignedUserId !== null && t.assignedUserId !== userId) return false;
+        return t.dueDate === today || t.status === "in_progress" || (t.dueDate !== null && t.dueDate < today);
+      })
+      .sort(compareTasks);
+  };
+
+export const selectTaskHours =
+  (taskId: string) =>
+  (s: AppState): number => {
+    let total = 0;
+    for (const [entryId, taskIds] of Object.entries(s.entryTasks)) {
+      if (!taskIds.includes(taskId)) continue;
+      const entry = s.entries.find((e) => e.id === entryId);
+      if (entry) total += entry.hours;
+    }
+    return total;
+  };
+
+export const selectRivalTasksSummary =
+  (rivalId: UserId | undefined) =>
+  (s: AppState): { inProgress: number; doneThisWeek: number } => {
+    if (!rivalId) return { inProgress: 0, doneThisWeek: 0 };
+    const today = new Date();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
+    let inProgress = 0;
+    let doneThisWeek = 0;
+    for (const t of s.tasks) {
+      if (!t.projectId) continue;
+      const proj = s.projects.find((p) => p.id === t.projectId);
+      if (!proj || proj.isPersonal) continue;
+      if (
+        t.status === "in_progress" &&
+        (t.assignedUserId === rivalId || t.assignedUserId === null)
+      ) {
+        inProgress++;
+      }
+      if (
+        t.status === "done" &&
+        t.completedBy === rivalId &&
+        t.completedAt &&
+        new Date(t.completedAt) >= monday
+      ) {
+        doneThisWeek++;
+      }
+    }
+    return { inProgress, doneThisWeek };
+  };
 
 // Kept as an exported constant only for backward-compat with imports elsewhere.
 export const TODAY_ISO = todayISO();

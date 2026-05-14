@@ -132,6 +132,7 @@ export interface StopTimerResult extends ActionResult {
 export async function stopTimerAndSave(
   dateISO: string,
   note?: string,
+  taskIds?: string[],
 ): Promise<StopTimerResult> {
   const { supabase, userId } = await getAuthed();
   if (!userId) return { ok: false, error: "Non authentifié." };
@@ -173,14 +174,26 @@ export async function stopTimerAndSave(
       );
     }
 
-    const { error: insErr } = await supabase.from("time_entries").insert({
-      user_id: userId,
-      project_id: row.project_id,
-      hours,
-      date: dateISO,
-      note: note?.trim() ?? "",
-    });
+    const { data: inserted, error: insErr } = await supabase
+      .from("time_entries")
+      .insert({
+        user_id: userId,
+        project_id: row.project_id,
+        hours,
+        date: dateISO,
+        note: note?.trim() ?? "",
+      })
+      .select("id")
+      .maybeSingle();
     if (insErr) return { ok: false, error: insErr.message };
+
+    if (taskIds && taskIds.length > 0 && inserted?.id) {
+      const rows = taskIds.map((task_id) => ({
+        entry_id: inserted.id,
+        task_id,
+      }));
+      await supabase.from("entry_tasks").insert(rows);
+    }
 
     const { data: proj } = await supabase
       .from("projects")

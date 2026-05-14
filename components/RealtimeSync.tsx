@@ -6,17 +6,21 @@ import { createClient } from "@/lib/supabase/browser";
 import { useStore } from "@/lib/store";
 import {
   mapEntryRow,
+  mapEntryTaskRow,
   mapProjectRow,
   mapRecapRow,
   mapResourceRow,
   mapResourceViewRow,
+  mapTaskRow,
   mapTimerRow,
   mapUserRow,
   type EntryRow,
+  type EntryTaskRow,
   type ProjectRow,
   type RecapRow,
   type ResourceRow,
   type ResourceViewRow,
+  type TaskRow,
   type TimerRow,
   type UserRow,
 } from "@/lib/mappers";
@@ -89,6 +93,32 @@ export function RealtimeSync({ userId }: { userId: string }) {
       useStore.getState().upsertResource(mapResourceRow(row));
     };
 
+    const onTask = (payload: RealtimePostgresChangesPayload<TaskRow>) => {
+      if (payload.eventType === "DELETE") {
+        const id = (payload.old as { id?: string } | undefined)?.id;
+        if (id) useStore.getState().removeTask(id);
+        return;
+      }
+      const row = payload.new as TaskRow | undefined;
+      if (!row) return;
+      useStore.getState().upsertTask(mapTaskRow(row));
+    };
+
+    const onEntryTask = (payload: RealtimePostgresChangesPayload<EntryTaskRow>) => {
+      // Re-fetch the full link set for the affected entry so the store stays consistent.
+      const row = (payload.new ?? payload.old) as EntryTaskRow | undefined;
+      const entryId = row?.entry_id;
+      if (!entryId) return;
+      (async () => {
+        const { data } = await supabase
+          .from("entry_tasks")
+          .select("entry_id, task_id")
+          .eq("entry_id", entryId);
+        const ids = (data ?? []).map((r) => r.task_id);
+        useStore.getState().setEntryTasksLocal(entryId, ids);
+      })();
+    };
+
     const onResourceView = (
       payload: RealtimePostgresChangesPayload<ResourceViewRow>,
     ) => {
@@ -147,6 +177,16 @@ export function RealtimeSync({ userId }: { userId: string }) {
         "postgres_changes",
         { event: "*", schema: "public", table: "resource_views" },
         onResourceView,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tasks" },
+        onTask,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "entry_tasks" },
+        onEntryTask,
       );
 
     // Make sure the realtime connection carries the user's JWT so RLS-filtered
