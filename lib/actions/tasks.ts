@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { notifyTaskCompleted } from "@/lib/push/dispatch";
+import type { Database } from "@/lib/supabase/database.types";
 import type { TaskPriority, TaskStatus } from "@/lib/types";
+
+type TaskUpdateRow = Database["public"]["Tables"]["tasks"]["Update"];
 
 type ActionResult = { ok: boolean; error?: string };
 
@@ -106,7 +109,7 @@ export async function updateTask(
   const { supabase, userId } = await getAuthed();
   if (!userId) return { ok: false, error: "Non authentifié." };
 
-  const update: Record<string, unknown> = {};
+  const update: TaskUpdateRow = {};
   if (patch.title !== undefined) {
     const t = patch.title.trim();
     if (!t) return { ok: false, error: "Titre requis." };
