@@ -95,3 +95,18 @@ export interface EntryTaskLink {
   entryId: string;
   taskId: string;
 }
+
+export type TaskAttachmentKind = "file" | "link";
+
+export interface TaskAttachment {
+  id: string;
+  taskId: string;
+  kind: TaskAttachmentKind;
+  name: string;
+  url: string;
+  storagePath: string | null;
+  sizeBytes: number | null;
+  mime: string | null;
+  createdBy: UserId;
+  createdAt: string;
+}

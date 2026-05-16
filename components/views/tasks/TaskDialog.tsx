@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { X } from "lucide-react";
+import { X, Flag } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { createTask, updateTask, deleteTask } from "@/lib/actions/tasks";
+import { PRIORITY_FLAG, PRIORITY_LABEL } from "@/lib/taskPriority";
+import { TaskAttachmentsEditor } from "./TaskAttachmentsEditor";
 import type { Task, TaskPriority, TaskStatus } from "@/lib/types";
 
 interface Props {
@@ -111,7 +113,7 @@ export function TaskDialog({ open, onClose, task, defaults }: Props) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-md rounded-lg bg-surface border border-border p-5 shadow-xl">
+      <div className="w-full max-w-md rounded-lg bg-surface border border-border p-5 shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <div className="text-[14px] text-text font-medium">
             {task ? "Modifier la tâche" : "Nouvelle tâche"}
@@ -174,13 +176,20 @@ export function TaskDialog({ open, onClose, task, defaults }: Props) {
                 key={p}
                 type="button"
                 onClick={() => setPriority(p)}
-                className={`px-2 py-1.5 rounded text-[11px] border transition-colors ${
+                className={`flex items-center justify-center gap-1.5 px-2 py-1.5 rounded text-[11px] border transition-colors ${
                   priority === p
-                    ? "border-text text-text bg-bg"
+                    ? "border-text-2 text-text bg-bg"
                     : "border-border text-text-3 hover:text-text-2"
                 }`}
               >
-                {p === "low" ? "Basse" : p === "normal" ? "Normale" : "Haute"}
+                <Flag
+                  size={10}
+                  strokeWidth={1.5}
+                  className={PRIORITY_FLAG[p]}
+                  fill="currentColor"
+                  fillOpacity={0.22}
+                />
+                {PRIORITY_LABEL[p]}
               </button>
             ))}
           </div>
@@ -209,6 +218,8 @@ export function TaskDialog({ open, onClose, task, defaults }: Props) {
               <option value="done">Terminée</option>
             </select>
           )}
+
+          {task && <TaskAttachmentsEditor taskId={task.id} />}
 
           {error && (
             <div className="text-[11px] text-red-400">{error}</div>

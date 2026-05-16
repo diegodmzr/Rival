@@ -8,6 +8,7 @@ import type {
   Resource,
   ResourceView,
   Task,
+  TaskAttachment,
   TaskPriority,
   TaskStatus,
   TimeEntry,
@@ -31,6 +32,7 @@ export interface ServerSnapshot {
   resourceViews: ResourceView[];
   tasks: Task[];
   entryTasks: EntryTaskLink[];
+  taskAttachments: TaskAttachment[];
 }
 
 interface AppState {
@@ -44,6 +46,7 @@ interface AppState {
   resourceViews: ResourceView[];
   tasks: Task[];
   entryTasks: Record<string, string[]>;
+  taskAttachments: TaskAttachment[];
 
   // Local UI state
   timer: TimerState;
@@ -74,6 +77,8 @@ interface AppState {
   updateTaskLocal: (id: string, patch: Partial<Task>) => void;
   removeTask: (id: string) => void;
   setEntryTasksLocal: (entryId: string, taskIds: string[]) => void;
+  upsertTaskAttachment: (att: TaskAttachment) => void;
+  removeTaskAttachment: (id: string) => void;
   setTasksView: (v: TasksView) => void;
   setTasksCalendarMode: (m: TasksCalendarMode) => void;
 
@@ -110,6 +115,7 @@ export const useStore = create<AppState>()((set, get) => ({
   resourceViews: [],
   tasks: [],
   entryTasks: {},
+  taskAttachments: [],
 
   timer: DEFAULT_TIMER,
   hydrated: false,
@@ -154,6 +160,7 @@ export const useStore = create<AppState>()((set, get) => ({
         resourceViews: snap.resourceViews,
         tasks: snap.tasks,
         entryTasks: entryTasksMap,
+        taskAttachments: snap.taskAttachments,
         hydrated: true,
         timer: nextTimer,
       };
@@ -325,6 +332,20 @@ export const useStore = create<AppState>()((set, get) => ({
       else next[entryId] = taskIds;
       return { entryTasks: next };
     }),
+
+  upsertTaskAttachment: (att) =>
+    set((s) => {
+      const idx = s.taskAttachments.findIndex((a) => a.id === att.id);
+      if (idx === -1) return { taskAttachments: [...s.taskAttachments, att] };
+      const next = s.taskAttachments.slice();
+      next[idx] = att;
+      return { taskAttachments: next };
+    }),
+
+  removeTaskAttachment: (id) =>
+    set((s) => ({
+      taskAttachments: s.taskAttachments.filter((a) => a.id !== id),
+    })),
 
   setTasksView: (v) => {
     if (typeof window !== "undefined") {
@@ -507,6 +528,19 @@ export const selectRivalTasksSummary =
       }
     }
     return { inProgress, doneThisWeek };
+  };
+
+export const selectTaskAttachments =
+  (taskId: string) =>
+  (s: AppState): TaskAttachment[] =>
+    s.taskAttachments.filter((a) => a.taskId === taskId);
+
+export const selectTaskAttachmentsCount =
+  (taskId: string) =>
+  (s: AppState): number => {
+    let n = 0;
+    for (const a of s.taskAttachments) if (a.taskId === taskId) n++;
+    return n;
   };
 
 // Kept as an exported constant only for backward-compat with imports elsewhere.

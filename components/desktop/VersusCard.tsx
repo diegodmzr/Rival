@@ -1,6 +1,7 @@
 "use client";
 
 import { Trophy } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { Avatar } from "@/components/primitives/Avatar";
 import { useStore, selectRivalTasksSummary } from "@/lib/store";
 import { weekHours } from "@/lib/compute";
@@ -20,7 +21,7 @@ export function VersusCard() {
   const rows = [currentUserId, rivalId];
   const goal = users[currentUserId].weeklyGoal;
   const label = versusLabel({ diff, rivalName: users[rivalId]?.name ?? "" });
-  const tasksSummary = useStore(selectRivalTasksSummary(rivalId));
+  const tasksSummary = useStore(useShallow(selectRivalTasksSummary(rivalId)));
 
   return (
     <div className="bg-surface border border-border rounded-md px-[18px] py-4 flex flex-col gap-[14px] col-span-2">

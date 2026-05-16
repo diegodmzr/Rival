@@ -1,14 +1,10 @@
 "use client";
 
-import { Flag } from "lucide-react";
-import { useStore, selectSubtasks } from "@/lib/store";
+import { Flag, AlignLeft, Paperclip } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
+import { useStore, selectSubtasks, selectTaskAttachmentsCount } from "@/lib/store";
+import { PRIORITY_FLAG } from "@/lib/taskPriority";
 import type { Task } from "@/lib/types";
-
-const PRIORITY_COLOR = {
-  low: "text-text-3",
-  normal: "text-text-2",
-  high: "text-accent",
-} as const;
 
 export function TaskCard({
   task,
@@ -19,7 +15,8 @@ export function TaskCard({
 }) {
   const projects = useStore((s) => s.projects);
   const users = useStore((s) => s.users);
-  const subtasks = useStore(selectSubtasks(task.id));
+  const subtasks = useStore(useShallow(selectSubtasks(task.id)));
+  const attachmentsCount = useStore(selectTaskAttachmentsCount(task.id));
   const project = task.projectId
     ? projects.find((p) => p.id === task.projectId)
     : null;
@@ -38,8 +35,21 @@ export function TaskCard({
         {project && (
           <span className="truncate max-w-[100px]">{project.name}</span>
         )}
-        {task.priority !== "normal" && (
-          <Flag size={10} className={PRIORITY_COLOR[task.priority]} />
+        <Flag
+          size={10}
+          strokeWidth={1.4}
+          className={PRIORITY_FLAG[task.priority]}
+          fill="currentColor"
+          fillOpacity={0.18}
+        />
+        {task.description.trim().length > 0 && (
+          <AlignLeft size={10} strokeWidth={1.4} aria-label="Description" />
+        )}
+        {attachmentsCount > 0 && (
+          <span className="flex items-center gap-0.5">
+            <Paperclip size={10} strokeWidth={1.4} />
+            {attachmentsCount}
+          </span>
         )}
         {task.dueDate && <span>{task.dueDate.slice(5)}</span>}
         {subtasks.length > 0 && (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
 import { Avatar } from "@/components/primitives/Avatar";
 import { useStore, selectCurrentUser, selectRivalUser, selectRivalTasksSummary } from "@/lib/store";
 import { weekHours } from "@/lib/compute";
@@ -16,7 +17,7 @@ export function MobileVersus() {
   const max = Math.max(mine, theirs, 0.01);
   const rows = [me, rival];
   const week = weekNumber();
-  const tasksSummary = useStore(selectRivalTasksSummary(rival.id));
+  const tasksSummary = useStore(useShallow(selectRivalTasksSummary(rival.id)));
 
   return (
     <div className="mx-4 mb-[14px] px-4 py-[14px] bg-surface border border-border rounded-lg">

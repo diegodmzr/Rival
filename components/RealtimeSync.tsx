@@ -11,6 +11,7 @@ import {
   mapRecapRow,
   mapResourceRow,
   mapResourceViewRow,
+  mapTaskAttachmentRow,
   mapTaskRow,
   mapTimerRow,
   mapUserRow,
@@ -20,6 +21,7 @@ import {
   type RecapRow,
   type ResourceRow,
   type ResourceViewRow,
+  type TaskAttachmentRow,
   type TaskRow,
   type TimerRow,
   type UserRow,
@@ -102,6 +104,19 @@ export function RealtimeSync({ userId }: { userId: string }) {
       const row = payload.new as TaskRow | undefined;
       if (!row) return;
       useStore.getState().upsertTask(mapTaskRow(row));
+    };
+
+    const onTaskAttachment = (
+      payload: RealtimePostgresChangesPayload<TaskAttachmentRow>,
+    ) => {
+      if (payload.eventType === "DELETE") {
+        const id = (payload.old as { id?: string } | undefined)?.id;
+        if (id) useStore.getState().removeTaskAttachment(id);
+        return;
+      }
+      const row = payload.new as TaskAttachmentRow | undefined;
+      if (!row) return;
+      useStore.getState().upsertTaskAttachment(mapTaskAttachmentRow(row));
     };
 
     const onEntryTask = (payload: RealtimePostgresChangesPayload<EntryTaskRow>) => {
@@ -187,6 +202,11 @@ export function RealtimeSync({ userId }: { userId: string }) {
         "postgres_changes",
         { event: "*", schema: "public", table: "entry_tasks" },
         onEntryTask,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "task_attachments" },
+        onTaskAttachment,
       );
 
     // Make sure the realtime connection carries the user's JWT so RLS-filtered

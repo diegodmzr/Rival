@@ -5,6 +5,8 @@ import type {
   Resource,
   ResourceView,
   Task,
+  TaskAttachment,
+  TaskAttachmentKind,
   TaskPriority,
   TaskStatus,
   TimeEntry,
@@ -209,4 +211,32 @@ export function mapTaskRow(row: TaskRow): Task {
 
 export function mapEntryTaskRow(row: EntryTaskRow): EntryTaskLink {
   return { entryId: row.entry_id, taskId: row.task_id };
+}
+
+export interface TaskAttachmentRow {
+  id: string;
+  task_id: string;
+  kind: TaskAttachmentKind;
+  name: string;
+  url: string;
+  storage_path: string | null;
+  size_bytes: number | string | null;
+  mime: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+export function mapTaskAttachmentRow(row: TaskAttachmentRow): TaskAttachment {
+  return {
+    id: row.id,
+    taskId: row.task_id,
+    kind: row.kind,
+    name: row.name,
+    url: row.url,
+    storagePath: row.storage_path,
+    sizeBytes: row.size_bytes == null ? null : Number(row.size_bytes),
+    mime: row.mime,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+  };
 }

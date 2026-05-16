@@ -194,6 +194,111 @@ export async function reorderTasks(orderedIds: string[]): Promise<ActionResult> 
   return { ok: true };
 }
 
+// ---------------------------------------------------------
+// Attachments
+// ---------------------------------------------------------
+
+export interface AddTaskFileInput {
+  taskId: string;
+  name: string;
+  storagePath: string;
+  url: string;
+  sizeBytes: number;
+  mime: string | null;
+}
+
+export async function addTaskFile(
+  input: AddTaskFileInput,
+): Promise<ActionResult & { id?: string }> {
+  const { supabase, userId } = await getAuthed();
+  if (!userId) return { ok: false, error: "Non authentifié." };
+  const name = input.name.trim();
+  if (!name) return { ok: false, error: "Nom requis." };
+
+  const { data, error } = await supabase
+    .from("task_attachments")
+    .insert({
+      task_id: input.taskId,
+      kind: "file",
+      name: name.slice(0, 200),
+      url: input.url,
+      storage_path: input.storagePath,
+      size_bytes: input.sizeBytes,
+      mime: input.mime,
+      created_by: userId,
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true, id: data?.id };
+}
+
+export interface AddTaskLinkInput {
+  taskId: string;
+  name: string;
+  url: string;
+}
+
+export async function addTaskLink(
+  input: AddTaskLinkInput,
+): Promise<ActionResult & { id?: string }> {
+  const { supabase, userId } = await getAuthed();
+  if (!userId) return { ok: false, error: "Non authentifié." };
+
+  const name = input.name.trim();
+  const url = input.url.trim();
+  if (!url) return { ok: false, error: "URL requise." };
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "http:" && u.protocol !== "https:") {
+      return { ok: false, error: "URL invalide." };
+    }
+  } catch {
+    return { ok: false, error: "URL invalide." };
+  }
+
+  const { data, error } = await supabase
+    .from("task_attachments")
+    .insert({
+      task_id: input.taskId,
+      kind: "link",
+      name: (name || url).slice(0, 200),
+      url,
+      created_by: userId,
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true, id: data?.id };
+}
+
+export async function removeTaskAttachment(
+  id: string,
+): Promise<ActionResult> {
+  const { supabase, userId } = await getAuthed();
+  if (!userId) return { ok: false, error: "Non authentifié." };
+
+  const { data: row } = await supabase
+    .from("task_attachments")
+    .select("storage_path")
+    .eq("id", id)
+    .maybeSingle();
+
+  const { error } = await supabase.from("task_attachments").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+
+  if (row?.storage_path) {
+    await supabase.storage.from("task-attachments").remove([row.storage_path]);
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function linkEntryTasks(
   entryId: string,
   taskIds: string[],

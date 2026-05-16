@@ -8,6 +8,7 @@ import type {
   Resource,
   ResourceView,
   Task,
+  TaskAttachment,
   TimeEntry,
   TimerState,
   User,
@@ -20,6 +21,7 @@ import {
   mapRecapRow,
   mapResourceRow,
   mapResourceViewRow,
+  mapTaskAttachmentRow,
   mapTaskRow,
   mapTimerRow,
   mapUserRow,
@@ -156,6 +158,16 @@ export async function getEntryTasks(): Promise<EntryTaskLink[]> {
   return data.map(mapEntryTaskRow);
 }
 
+export async function getTaskAttachments(): Promise<TaskAttachment[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("task_attachments")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error || !data) return [];
+  return data.map(mapTaskAttachmentRow);
+}
+
 export interface DashboardData {
   currentUser: User;
   team: User[];
@@ -167,6 +179,7 @@ export interface DashboardData {
   resourceViews: ResourceView[];
   tasks: Task[];
   entryTasks: EntryTaskLink[];
+  taskAttachments: TaskAttachment[];
 }
 
 export async function getDashboardData(): Promise<DashboardData | null> {
@@ -181,6 +194,7 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     resourceViews,
     tasks,
     entryTasks,
+    taskAttachments,
   ] = await Promise.all([
     getCurrentUser(),
     getAllUsers(),
@@ -192,6 +206,7 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     getResourceViews(),
     getTasks(),
     getEntryTasks(),
+    getTaskAttachments(),
   ]);
   if (!currentUser) return null;
   return {
@@ -205,5 +220,6 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     resourceViews,
     tasks,
     entryTasks,
+    taskAttachments,
   };
 }

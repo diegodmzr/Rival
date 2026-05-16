@@ -1,14 +1,17 @@
 "use client";
 
 import { useTransition } from "react";
-import { Circle, CircleDashed, CheckCircle2, Flag } from "lucide-react";
+import { Circle, CircleDashed, CheckCircle2, Flag, AlignLeft, Paperclip } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import {
   useStore,
   selectSubtasks,
   selectTaskHours,
+  selectTaskAttachmentsCount,
 } from "@/lib/store";
 import { setTaskStatus } from "@/lib/actions/tasks";
 import { fmt } from "@/lib/format";
+import { PRIORITY_FLAG } from "@/lib/taskPriority";
 import type { Task, TaskStatus } from "@/lib/types";
 
 const STATUS_ICON = {
@@ -23,12 +26,6 @@ const NEXT_STATUS: Record<TaskStatus, TaskStatus> = {
   done: "todo",
 };
 
-const PRIORITY_COLOR = {
-  low: "text-text-3",
-  normal: "text-text-2",
-  high: "text-accent",
-} as const;
-
 interface Props {
   task: Task;
   onOpen: (t: Task) => void;
@@ -36,8 +33,9 @@ interface Props {
 }
 
 export function TaskRow({ task, onOpen, depth = 0 }: Props) {
-  const subtasks = useStore(selectSubtasks(task.id));
+  const subtasks = useStore(useShallow(selectSubtasks(task.id)));
   const hours = useStore(selectTaskHours(task.id));
+  const attachmentsCount = useStore(selectTaskAttachmentsCount(task.id));
   const users = useStore((s) => s.users);
   const projects = useStore((s) => s.projects);
   const updateLocal = useStore((s) => s.updateTaskLocal);
@@ -91,12 +89,26 @@ export function TaskRow({ task, onOpen, depth = 0 }: Props) {
             {project.name}
           </span>
         )}
-        {task.priority !== "normal" && (
-          <Flag
+        <Flag
+          size={11}
+          strokeWidth={1.4}
+          className={PRIORITY_FLAG[task.priority]}
+          fill="currentColor"
+          fillOpacity={0.18}
+        />
+        {task.description.trim().length > 0 && (
+          <AlignLeft
             size={11}
-            strokeWidth={1.3}
-            className={PRIORITY_COLOR[task.priority]}
+            strokeWidth={1.4}
+            className="text-text-3"
+            aria-label="Description"
           />
+        )}
+        {attachmentsCount > 0 && (
+          <span className="flex items-center gap-0.5 text-[10px] font-mono text-text-3">
+            <Paperclip size={10} strokeWidth={1.4} />
+            {attachmentsCount}
+          </span>
         )}
         {task.dueDate && (
           <span className="text-[10.5px] font-mono text-text-3">

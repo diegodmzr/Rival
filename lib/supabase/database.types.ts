@@ -403,6 +403,58 @@ export type Database = {
           },
         ];
       };
+      task_attachments: {
+        Row: {
+          id: string;
+          task_id: string;
+          kind: "file" | "link";
+          name: string;
+          url: string;
+          storage_path: string | null;
+          size_bytes: number | null;
+          mime: string | null;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          kind: "file" | "link";
+          name: string;
+          url: string;
+          storage_path?: string | null;
+          size_bytes?: number | null;
+          mime?: string | null;
+          created_by: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          task_id?: string;
+          kind?: "file" | "link";
+          name?: string;
+          url?: string;
+          storage_path?: string | null;
+          size_bytes?: number | null;
+          mime?: string | null;
+          created_by?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "task_attachments_task_id_fkey";
+            columns: ["task_id"];
+            referencedRelation: "tasks";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "task_attachments_created_by_fkey";
+            columns: ["created_by"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       entry_tasks: {
         Row: {
           entry_id: string;
@@ -447,3 +499,4 @@ export type ProjectRow = Database["public"]["Tables"]["projects"]["Row"];
 export type TimeEntryRow = Database["public"]["Tables"]["time_entries"]["Row"];
 export type TaskRow = Database["public"]["Tables"]["tasks"]["Row"];
 export type EntryTaskRow = Database["public"]["Tables"]["entry_tasks"]["Row"];
+export type TaskAttachmentRow = Database["public"]["Tables"]["task_attachments"]["Row"];

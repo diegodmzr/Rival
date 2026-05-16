@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CheckSquare, ArrowRight } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { useStore, selectCurrentUser, selectTodayTasks } from "@/lib/store";
 import { TaskRow } from "@/components/views/tasks/TaskRow";
 import { TaskDialog } from "@/components/views/tasks/TaskDialog";
@@ -10,7 +11,7 @@ import type { Task } from "@/lib/types";
 
 export function MobileTasksToday() {
   const me = useStore(selectCurrentUser);
-  const today = useStore(selectTodayTasks(me?.id ?? ""));
+  const today = useStore(useShallow(selectTodayTasks(me?.id ?? "")));
   const [editing, setEditing] = useState<Task | null>(null);
 
   return (
