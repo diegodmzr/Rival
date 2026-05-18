@@ -1,7 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronRight } from "lucide-react";
+import {
+  ChevronRight,
+  AlertCircle,
+  Sun,
+  CalendarDays,
+  Calendar,
+  CircleSlash,
+  CheckCircle2,
+  Plus,
+  CheckSquare,
+} from "lucide-react";
 import { TaskRow } from "./TaskRow";
 import { TaskDialog } from "./TaskDialog";
 import { todayISO } from "@/lib/date";
@@ -13,13 +23,40 @@ interface Props {
 
 type GroupKey = "overdue" | "today" | "week" | "later" | "none" | "done";
 
-const GROUP_LABELS: Record<GroupKey, string> = {
-  overdue: "En retard",
-  today: "Aujourd'hui",
-  week: "Cette semaine",
-  later: "Plus tard",
-  none: "Sans échéance",
-  done: "Terminées",
+const GROUP_META: Record<
+  GroupKey,
+  { label: string; Icon: typeof Sun; accent: string }
+> = {
+  overdue: {
+    label: "En retard",
+    Icon: AlertCircle,
+    accent: "text-red-400",
+  },
+  today: {
+    label: "Aujourd'hui",
+    Icon: Sun,
+    accent: "text-amber-400",
+  },
+  week: {
+    label: "Cette semaine",
+    Icon: CalendarDays,
+    accent: "text-text-2",
+  },
+  later: {
+    label: "Plus tard",
+    Icon: Calendar,
+    accent: "text-text-3",
+  },
+  none: {
+    label: "Sans échéance",
+    Icon: CircleSlash,
+    accent: "text-text-3",
+  },
+  done: {
+    label: "Terminées",
+    Icon: CheckCircle2,
+    accent: "text-text-3",
+  },
 };
 
 function groupTasks(tasks: Task[]): Record<GroupKey, Task[]> {
@@ -59,33 +96,78 @@ function groupTasks(tasks: Task[]): Record<GroupKey, Task[]> {
   return groups;
 }
 
+function groupDueHint(key: GroupKey): string | null {
+  if (key === "today") return todayISO();
+  if (key === "overdue") return todayISO();
+  return null;
+}
+
 export function TasksListView({ tasks }: Props) {
   const groups = useMemo(() => groupTasks(tasks), [tasks]);
   const [showDone, setShowDone] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
+  const [creating, setCreating] = useState<{ dueDate: string | null } | null>(
+    null,
+  );
 
   const order: GroupKey[] = ["overdue", "today", "week", "later", "none"];
   const hasAny =
     order.some((k) => groups[k].length > 0) || groups.done.length > 0;
 
-  return (
-    <div className="space-y-5">
-      {!hasAny && (
-        <div className="text-[12px] text-text-3 italic py-6 text-center">
-          Aucune tâche pour le moment.
+  if (!hasAny) {
+    return (
+      <>
+        <div className="border border-dashed border-border rounded-md py-12 px-6 flex flex-col items-center text-center">
+          <div className="h-9 w-9 rounded-full border border-border flex items-center justify-center mb-3 text-text-3">
+            <CheckSquare size={15} strokeWidth={1.4} />
+          </div>
+          <div className="text-[13px] text-text mb-1">Aucune tâche</div>
+          <div className="text-[11.5px] text-text-3 mb-4 max-w-[260px]">
+            Ajuste tes filtres ou crée ta première tâche pour commencer.
+          </div>
+          <button
+            onClick={() => setCreating({ dueDate: null })}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-text text-bg text-[11.5px] hover:opacity-90"
+          >
+            <Plus size={11} strokeWidth={1.8} /> Nouvelle tâche
+          </button>
         </div>
-      )}
+        <TaskDialog
+          open={!!creating}
+          onClose={() => setCreating(null)}
+          defaults={{ dueDate: creating?.dueDate ?? null }}
+        />
+      </>
+    );
+  }
 
+  return (
+    <div className="space-y-4">
       {order.map((key) => {
         const list = groups[key];
         if (list.length === 0) return null;
+        const { label, Icon, accent } = GROUP_META[key];
+        const dueHint = groupDueHint(key);
         return (
           <section key={key}>
-            <div className="text-[10.5px] text-text-3 uppercase tracking-wide mb-1 px-2">
-              {GROUP_LABELS[key]}{" "}
-              <span className="font-mono">· {list.length}</span>
+            <div className="flex items-center gap-2 mb-1.5 px-2">
+              <Icon size={11} strokeWidth={1.5} className={accent} />
+              <span className="text-[10.5px] text-text-2 uppercase tracking-wide">
+                {label}
+              </span>
+              <span className="text-[10.5px] text-text-3 font-mono">
+                {list.length}
+              </span>
+              <button
+                onClick={() => setCreating({ dueDate: dueHint })}
+                className="ml-auto inline-flex items-center gap-0.5 h-5 w-5 justify-center rounded text-text-3 hover:text-text hover:bg-bg transition-colors"
+                title="Ajouter dans ce groupe"
+                aria-label="Ajouter dans ce groupe"
+              >
+                <Plus size={11} strokeWidth={1.8} />
+              </button>
             </div>
-            <div>
+            <div className="bg-surface/40 border border-border/60 rounded-md py-0.5">
               {list.map((t) => (
                 <TaskRow key={t.id} task={t} onOpen={setEditing} />
               ))}
@@ -98,19 +180,23 @@ export function TasksListView({ tasks }: Props) {
         <section>
           <button
             onClick={() => setShowDone((v) => !v)}
-            className="inline-flex items-center gap-1 text-[10.5px] text-text-3 hover:text-text px-2 mb-1 uppercase tracking-wide"
+            className="inline-flex items-center gap-1.5 text-[10.5px] text-text-3 hover:text-text px-2 mb-1.5 uppercase tracking-wide"
           >
             <ChevronRight
               size={11}
               className={`transition-transform ${showDone ? "rotate-90" : ""}`}
             />
-            {GROUP_LABELS.done}{" "}
+            <CheckCircle2 size={11} strokeWidth={1.5} />
+            {GROUP_META.done.label}
             <span className="font-mono">· {groups.done.length}</span>
           </button>
-          {showDone &&
-            groups.done.map((t) => (
-              <TaskRow key={t.id} task={t} onOpen={setEditing} />
-            ))}
+          {showDone && (
+            <div className="bg-surface/40 border border-border/60 rounded-md py-0.5">
+              {groups.done.map((t) => (
+                <TaskRow key={t.id} task={t} onOpen={setEditing} />
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -118,6 +204,11 @@ export function TasksListView({ tasks }: Props) {
         open={!!editing}
         task={editing}
         onClose={() => setEditing(null)}
+      />
+      <TaskDialog
+        open={!!creating}
+        onClose={() => setCreating(null)}
+        defaults={{ dueDate: creating?.dueDate ?? null }}
       />
     </div>
   );

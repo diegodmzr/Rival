@@ -1,3 +1,4 @@
+import { collapseRecurringSeries } from "@/lib/recurrence";
 import type { Task, TaskPriority, TaskStatus, UserId } from "@/lib/types";
 
 export type TaskFilters = {
@@ -22,7 +23,8 @@ export function applyTaskFilters(
   meId: UserId,
   rivalId: UserId | undefined,
 ): Task[] {
-  return tasks.filter((t) => {
+  const collapsed = collapseRecurringSeries(tasks);
+  return collapsed.filter((t) => {
     if (filters.projectId === "free" && t.projectId !== null) return false;
     if (
       filters.projectId !== "all" &&

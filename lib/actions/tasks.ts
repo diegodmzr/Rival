@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { notifyTaskCompleted } from "@/lib/push/dispatch";
 import type { Database } from "@/lib/supabase/database.types";
-import type { TaskPriority, TaskStatus } from "@/lib/types";
+import type { RecurrenceRule, TaskPriority, TaskStatus } from "@/lib/types";
+import {
+  generateOccurrenceDates,
+  MAX_GENERATED_OCCURRENCES,
+  validateRecurrence,
+} from "@/lib/recurrence";
 
 type TaskUpdateRow = Database["public"]["Tables"]["tasks"]["Update"];
 
@@ -27,6 +32,8 @@ export interface CreateTaskInput {
   priority?: TaskPriority;
   dueDate?: string | null;
   assignedUserId?: string | null;
+  isShared?: boolean;
+  recurrence?: RecurrenceRule | null;
 }
 
 export async function createTask(
@@ -72,6 +79,18 @@ export async function createTask(
   const { data: maxRow } = await positionQuery.maybeSingle();
   const position = (Number(maxRow?.position ?? -1) + 1) | 0;
 
+  const recurrence = input.recurrence ?? null;
+  if (recurrence) {
+    if (input.parentTaskId) {
+      return { ok: false, error: "Une sous-tâche ne peut pas être récurrente." };
+    }
+    if (!input.dueDate) {
+      return { ok: false, error: "Date de début requise pour une récurrence." };
+    }
+    const ruleErr = validateRecurrence(recurrence);
+    if (ruleErr) return { ok: false, error: ruleErr };
+  }
+
   const { data: inserted, error } = await supabase
     .from("tasks")
     .insert({
@@ -81,16 +100,65 @@ export async function createTask(
       description: input.description?.trim() ?? "",
       priority: input.priority ?? "normal",
       due_date: input.dueDate ?? null,
-      assigned_user_id: input.assignedUserId ?? null,
+      assigned_user_id: input.isShared ? null : input.assignedUserId ?? null,
+      is_shared: input.isShared ?? false,
+      completed_user_ids: [],
+      recurrence: recurrence ?? null,
       created_by: userId,
       position,
     })
-    .select("id")
+    .select("id, due_date")
     .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
+
+  // Generate further occurrences from the mother task.
+  if (recurrence && inserted?.id && inserted.due_date) {
+    const allDates = generateOccurrenceDates(recurrence, inserted.due_date);
+    const futureDates = allDates.slice(1, MAX_GENERATED_OCCURRENCES);
+    if (futureDates.length > 0) {
+      const rows = futureDates.map((d, idx) => ({
+        project_id: input.projectId,
+        parent_task_id: null,
+        title,
+        description: input.description?.trim() ?? "",
+        priority: input.priority ?? "normal",
+        due_date: d,
+        assigned_user_id: input.isShared ? null : input.assignedUserId ?? null,
+        is_shared: input.isShared ?? false,
+        completed_user_ids: [],
+        recurrence_parent_id: inserted.id,
+        created_by: userId,
+        position: position + idx + 1,
+      }));
+      const { error: genErr } = await supabase.from("tasks").insert(rows);
+      if (genErr) return { ok: false, error: genErr.message };
+    }
+  }
+
   revalidatePath("/", "layout");
   return { ok: true, id: inserted?.id };
+}
+
+export async function deleteTaskSeries(
+  motherId: string,
+): Promise<ActionResult> {
+  const { supabase, userId } = await getAuthed();
+  if (!userId) return { ok: false, error: "Non authentifié." };
+
+  // Delete all occurrences referencing the mother first (FK has cascade,
+  // but doing it explicitly keeps RLS checks consistent).
+  const { error: childErr } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("recurrence_parent_id", motherId);
+  if (childErr) return { ok: false, error: childErr.message };
+
+  const { error } = await supabase.from("tasks").delete().eq("id", motherId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 export interface UpdateTaskPatch {
@@ -100,6 +168,7 @@ export interface UpdateTaskPatch {
   dueDate?: string | null;
   assignedUserId?: string | null;
   status?: TaskStatus;
+  isShared?: boolean;
 }
 
 export async function updateTask(
@@ -120,6 +189,18 @@ export async function updateTask(
   if (patch.priority !== undefined) update.priority = patch.priority;
   if (patch.dueDate !== undefined) update.due_date = patch.dueDate;
   if (patch.assignedUserId !== undefined) update.assigned_user_id = patch.assignedUserId;
+  if (patch.isShared !== undefined) {
+    update.is_shared = patch.isShared;
+    if (patch.isShared) {
+      update.assigned_user_id = null;
+      update.completed_user_ids = [];
+      update.status = "todo";
+      update.completed_by = null;
+      update.completed_at = null;
+    } else {
+      update.completed_user_ids = [];
+    }
+  }
   if (patch.status !== undefined) {
     update.status = patch.status;
     if (patch.status === "done") {
@@ -167,6 +248,57 @@ export async function setTaskStatus(
   status: TaskStatus,
 ): Promise<ActionResult> {
   return updateTask(id, { status });
+}
+
+export async function toggleSharedTaskForMe(
+  id: string,
+): Promise<ActionResult> {
+  const { supabase, userId } = await getAuthed();
+  if (!userId) return { ok: false, error: "Non authentifié." };
+
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("is_shared, completed_user_ids, title, project_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!task) return { ok: false, error: "Tâche introuvable." };
+  if (!task.is_shared) return { ok: false, error: "Tâche non partagée." };
+
+  const current = task.completed_user_ids ?? [];
+  const has = current.includes(userId);
+  const next = has ? current.filter((u) => u !== userId) : [...current, userId];
+
+  const { data: users } = await supabase.from("users").select("id");
+  const totalUsers = users?.length ?? 0;
+  const allDone = totalUsers > 0 && next.length >= totalUsers;
+
+  const update: TaskUpdateRow = {
+    completed_user_ids: next,
+    status: allDone ? "done" : next.length > 0 ? "in_progress" : "todo",
+    completed_by: allDone ? userId : null,
+    completed_at: allDone ? new Date().toISOString() : null,
+  };
+
+  const { error } = await supabase.from("tasks").update(update).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+
+  if (allDone && task.project_id) {
+    const { data: project } = await supabase
+      .from("projects")
+      .select("name, is_personal")
+      .eq("id", task.project_id)
+      .maybeSingle();
+    if (project && project.is_personal === false) {
+      notifyTaskCompleted({
+        actorUserId: userId,
+        projectName: project.name,
+        taskTitle: task.title,
+      });
+    }
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 export async function deleteTask(id: string): Promise<ActionResult> {

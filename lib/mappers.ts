@@ -2,6 +2,7 @@ import type {
   DayRecap,
   EntryTaskLink,
   Project,
+  RecurrenceRule,
   Resource,
   ResourceView,
   Task,
@@ -179,6 +180,10 @@ export interface TaskRow {
   created_by: string;
   completed_by: string | null;
   completed_at: string | null;
+  is_shared?: boolean | null;
+  completed_user_ids?: string[] | null;
+  recurrence?: unknown;
+  recurrence_parent_id?: string | null;
   position: number | string;
   created_at: string;
   updated_at: string;
@@ -203,6 +208,10 @@ export function mapTaskRow(row: TaskRow): Task {
     createdBy: row.created_by,
     completedBy: row.completed_by,
     completedAt: row.completed_at,
+    isShared: row.is_shared ?? false,
+    completedUserIds: row.completed_user_ids ?? [],
+    recurrence: (row.recurrence as RecurrenceRule | null) ?? null,
+    recurrenceParentId: row.recurrence_parent_id ?? null,
     position: Number(row.position),
     createdAt: row.created_at,
     updatedAt: row.updated_at,

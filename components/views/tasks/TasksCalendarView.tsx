@@ -55,7 +55,7 @@ function DayCell({
       ref={setNodeRef}
       className={`flex flex-col border-r border-b border-border last:border-r-0 ${
         isOver ? "bg-surface" : ""
-      } ${dim ? "opacity-40" : ""} ${compact ? "min-h-[68px] p-1" : "min-h-[140px] p-1.5"}`}
+      } ${dim ? "opacity-40" : ""} ${compact ? "min-h-[60px] sm:min-h-[68px] p-1" : "min-h-[90px] sm:min-h-[140px] p-1.5"}`}
     >
       <div className="flex items-center justify-between mb-1">
         <span
@@ -202,31 +202,33 @@ export function TasksCalendarView({ tasks }: { tasks: Task[] }) {
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="flex items-center justify-between mb-3 text-[11.5px] flex-wrap gap-2">
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between mb-3 text-[11.5px] gap-2">
+        <div className="flex items-center gap-1 min-w-0">
           <button
             onClick={navPrev}
-            className="text-text-3 hover:text-text px-1"
+            className="text-text-3 hover:text-text px-1 shrink-0"
             aria-label="Précédent"
           >
             <ChevronLeft size={14} strokeWidth={1.4} />
           </button>
           <button
             onClick={navToday}
-            className="text-text-3 hover:text-text px-2"
+            className="text-text-3 hover:text-text px-2 shrink-0"
           >
             Aujourd'hui
           </button>
           <button
             onClick={navNext}
-            className="text-text-3 hover:text-text px-1"
+            className="text-text-3 hover:text-text px-1 shrink-0"
             aria-label="Suivant"
           >
             <ChevronRight size={14} strokeWidth={1.4} />
           </button>
-          <span className="text-text-2 ml-2 capitalize">{periodLabel}</span>
+          <span className="text-text-2 ml-2 capitalize truncate">
+            {periodLabel}
+          </span>
         </div>
-        <div className="inline-flex bg-bg border border-border rounded p-0.5">
+        <div className="inline-flex bg-bg border border-border rounded p-0.5 shrink-0">
           {(["week", "month"] as const).map((m) => (
             <button
               key={m}
@@ -254,41 +256,37 @@ export function TasksCalendarView({ tasks }: { tasks: Task[] }) {
         </div>
       )}
 
-      <div className="border-t border-l border-border rounded overflow-hidden">
-        {mode === "month" && (
-          <div className="grid grid-cols-7 bg-bg text-[10px] text-text-3 uppercase tracking-wide">
-            {WEEKDAYS.map((w, i) => (
-              <div
-                key={i}
-                className="px-2 py-1 border-r border-b border-border last:border-r-0"
-              >
-                {w}
-              </div>
+      <div className="border-t border-l border-border rounded overflow-x-auto">
+        <div className={mode === "week" ? "min-w-[560px]" : ""}>
+          {mode === "month" && (
+            <div className="grid grid-cols-7 bg-bg text-[10px] text-text-3 uppercase tracking-wide">
+              {WEEKDAYS.map((w, i) => (
+                <div
+                  key={i}
+                  className="px-2 py-1 border-r border-b border-border last:border-r-0"
+                >
+                  {w}
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="grid grid-cols-7">
+            {days.map((d) => (
+              <DayCell
+                key={d}
+                date={d}
+                tasks={tasksByDay[d] ?? []}
+                onOpenTask={setEditing}
+                onCreate={(date) => setCreating(date)}
+                compact={mode === "month"}
+                inCurrentMonth={
+                  mode === "month"
+                    ? new Date(d).getMonth() === currentMonth
+                    : true
+                }
+              />
             ))}
           </div>
-        )}
-        <div
-          className={
-            mode === "week"
-              ? "grid grid-cols-7"
-              : "grid grid-cols-7"
-          }
-        >
-          {days.map((d) => (
-            <DayCell
-              key={d}
-              date={d}
-              tasks={tasksByDay[d] ?? []}
-              onOpenTask={setEditing}
-              onCreate={(date) => setCreating(date)}
-              compact={mode === "month"}
-              inCurrentMonth={
-                mode === "month"
-                  ? new Date(d).getMonth() === currentMonth
-                  : true
-              }
-            />
-          ))}
         </div>
       </div>
 

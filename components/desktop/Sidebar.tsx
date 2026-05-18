@@ -14,6 +14,7 @@ import {
   Settings as SettingsIcon,
   ChevronDown,
   LogOut,
+  Keyboard,
 } from "lucide-react";
 import { Avatar } from "@/components/primitives/Avatar";
 import { useStore } from "@/lib/store";
@@ -34,6 +35,7 @@ export function Sidebar() {
   const pathname = usePathname() || "/";
   const users = useStore((s) => s.users);
   const currentUserId = useStore((s) => s.currentUserId);
+  const openShortcuts = useStore((s) => s.openShortcuts);
   const currentUser = users[currentUserId];
   const team = Object.values(users);
 
@@ -98,6 +100,18 @@ export function Sidebar() {
       </div>
 
       <div className="flex-1" />
+
+      <button
+        type="button"
+        onClick={openShortcuts}
+        className="flex items-center gap-[10px] px-[9px] py-[6px] rounded-[5px] text-[11.5px] text-text-3 hover:text-text hover:bg-white/[0.03] transition-colors text-left"
+      >
+        <Keyboard size={12} strokeWidth={1.3} />
+        <span>Raccourcis</span>
+        <span className="ml-auto font-mono text-[10px] px-[5px] py-px rounded border border-border bg-bg">
+          ?
+        </span>
+      </button>
 
       {currentUser && (
         <div className="border-t border-border -mx-[14px] mt-3">

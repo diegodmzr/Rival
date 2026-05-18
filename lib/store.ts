@@ -17,6 +17,7 @@ import type {
   UserId,
 } from "./types";
 import { todayISO } from "./date";
+import { collapseRecurringSeries } from "./recurrence";
 
 export type TasksView = "list" | "kanban" | "calendar";
 export type TasksCalendarMode = "week" | "month";
@@ -53,6 +54,8 @@ interface AppState {
   hydrated: boolean;
   quickAddOpen: boolean;
   mobileTimerOpen: boolean;
+  taskCreatorOpen: boolean;
+  shortcutsOpen: boolean;
   tasksView: TasksView;
   tasksCalendarMode: TasksCalendarMode;
 
@@ -87,6 +90,10 @@ interface AppState {
   closeQuickAdd: () => void;
   openMobileTimer: () => void;
   closeMobileTimer: () => void;
+  openTaskCreator: () => void;
+  closeTaskCreator: () => void;
+  openShortcuts: () => void;
+  closeShortcuts: () => void;
 
   // Timer (local only — its final value is persisted via a server action)
   startTimer: (projectId?: string) => void;
@@ -121,6 +128,8 @@ export const useStore = create<AppState>()((set, get) => ({
   hydrated: false,
   quickAddOpen: false,
   mobileTimerOpen: false,
+  taskCreatorOpen: false,
+  shortcutsOpen: false,
   tasksView: "list",
   tasksCalendarMode: "week",
 
@@ -363,6 +372,10 @@ export const useStore = create<AppState>()((set, get) => ({
 
   openQuickAdd: () => set({ quickAddOpen: true }),
   closeQuickAdd: () => set({ quickAddOpen: false }),
+  openTaskCreator: () => set({ taskCreatorOpen: true }),
+  closeTaskCreator: () => set({ taskCreatorOpen: false }),
+  openShortcuts: () => set({ shortcutsOpen: true }),
+  closeShortcuts: () => set({ shortcutsOpen: false }),
   openMobileTimer: () => set({ mobileTimerOpen: true }),
   closeMobileTimer: () => set({ mobileTimerOpen: false }),
 
@@ -476,7 +489,7 @@ export const selectTodayTasks =
   (userId: UserId) =>
   (s: AppState): Task[] => {
     const today = todayISO();
-    return s.tasks
+    return collapseRecurringSeries(s.tasks)
       .filter((t) => {
         if (t.status === "done") return false;
         if (t.parentTaskId !== null) return false;

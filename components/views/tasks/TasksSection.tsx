@@ -62,20 +62,26 @@ export function TasksSection({ scope }: Props) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-        <TasksFilters
-          value={filters}
-          onChange={setFilters}
-          hideProject={scope !== "global"}
-          hideStatus={view === "kanban"}
-        />
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <div className="order-2 md:order-1 min-w-0">
+          <TasksFilters
+            value={filters}
+            onChange={setFilters}
+            hideProject={scope !== "global"}
+            hideStatus={view === "kanban"}
+          />
+        </div>
+        <div className="order-1 md:order-2 flex items-center justify-between md:justify-end gap-2">
           <TasksViewSwitcher value={view} onChange={setView} />
           <button
             onClick={() => setCreating(true)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-text text-bg text-[11.5px] hover:opacity-90"
+            title="Nouvelle tâche (T)"
+            className="inline-flex items-center gap-1 h-7 pl-3 pr-2 rounded-full bg-text text-bg text-[11.5px] hover:opacity-90 shrink-0"
           >
             <Plus size={11} strokeWidth={1.8} /> Nouvelle
+            <span className="hidden sm:inline font-mono text-[9.5px] px-[4px] py-px rounded ml-1 text-[rgba(5,5,5,0.55)] bg-[rgba(5,5,5,0.12)]">
+              T
+            </span>
           </button>
         </div>
       </div>

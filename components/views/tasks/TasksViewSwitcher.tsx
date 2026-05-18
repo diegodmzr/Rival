@@ -16,19 +16,21 @@ const ITEMS: { v: TasksView; label: string; Icon: typeof List }[] = [
 
 export function TasksViewSwitcher({ value, onChange }: Props) {
   return (
-    <div className="inline-flex bg-bg border border-border rounded p-0.5 text-[11.5px]">
+    <div className="inline-flex h-7 bg-bg border border-border rounded-full p-0.5 text-[11.5px]">
       {ITEMS.map(({ v, label, Icon }) => (
         <button
           key={v}
           onClick={() => onChange(v)}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded transition-colors ${
+          aria-label={label}
+          title={label}
+          className={`inline-flex items-center gap-1.5 px-2.5 rounded-full transition-colors ${
             value === v
               ? "bg-surface text-text"
               : "text-text-3 hover:text-text"
           }`}
         >
           <Icon size={12} strokeWidth={1.3} />
-          {label}
+          <span className="hidden sm:inline">{label}</span>
         </button>
       ))}
     </div>

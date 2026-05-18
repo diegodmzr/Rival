@@ -332,6 +332,10 @@ export type Database = {
           created_by: string;
           completed_by: string | null;
           completed_at: string | null;
+          is_shared: boolean;
+          completed_user_ids: string[];
+          recurrence: unknown | null;
+          recurrence_parent_id: string | null;
           position: number;
           created_at: string;
           updated_at: string;
@@ -349,6 +353,10 @@ export type Database = {
           created_by: string;
           completed_by?: string | null;
           completed_at?: string | null;
+          is_shared?: boolean;
+          completed_user_ids?: string[];
+          recurrence?: unknown | null;
+          recurrence_parent_id?: string | null;
           position?: number;
           created_at?: string;
           updated_at?: string;
@@ -366,6 +374,10 @@ export type Database = {
           created_by?: string;
           completed_by?: string | null;
           completed_at?: string | null;
+          is_shared?: boolean;
+          completed_user_ids?: string[];
+          recurrence?: unknown | null;
+          recurrence_parent_id?: string | null;
           position?: number;
           created_at?: string;
           updated_at?: string;

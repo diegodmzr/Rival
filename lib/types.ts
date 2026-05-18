@@ -73,6 +73,20 @@ export interface ResourceView {
 export type TaskStatus = "todo" | "in_progress" | "done";
 export type TaskPriority = "low" | "normal" | "high";
 
+export type RecurrenceFreq = "daily" | "weekly" | "monthly" | "yearly";
+
+export type RecurrenceEnd =
+  | { type: "never" }
+  | { type: "until"; date: string }
+  | { type: "count"; count: number };
+
+export interface RecurrenceRule {
+  freq: RecurrenceFreq;
+  interval: number;
+  weekdays?: number[];
+  end: RecurrenceEnd;
+}
+
 export interface Task {
   id: string;
   projectId: string | null;
@@ -86,6 +100,10 @@ export interface Task {
   createdBy: UserId;
   completedBy: UserId | null;
   completedAt: string | null;
+  isShared: boolean;
+  completedUserIds: UserId[];
+  recurrence: RecurrenceRule | null;
+  recurrenceParentId: string | null;
   position: number;
   createdAt: string;
   updatedAt: string;

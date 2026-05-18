@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { Sidebar } from "@/components/desktop/Sidebar";
 import { TopBar } from "@/components/desktop/TopBar";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
@@ -11,6 +10,9 @@ import { StoreHydrator } from "@/components/StoreHydrator";
 import { RealtimeSync } from "@/components/RealtimeSync";
 import { NotificationsManager } from "@/components/NotificationsManager";
 import { RestDayEnforcer } from "@/components/RestDayEnforcer";
+import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
+import { GlobalTaskCreator } from "@/components/GlobalTaskCreator";
+import { ShortcutsCheatsheet } from "@/components/ShortcutsCheatsheet";
 import { useStore, type ServerSnapshot } from "@/lib/store";
 
 export function AppShell({
@@ -21,28 +23,6 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const hydrated = useStore((s) => s.hydrated);
-  const openQuickAdd = useStore((s) => s.openQuickAdd);
-  const quickAddOpen = useStore((s) => s.quickAddOpen);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== "n") return;
-      const target = e.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
-      ) {
-        return;
-      }
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      e.preventDefault();
-      if (!quickAddOpen) openQuickAdd();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [openQuickAdd, quickAddOpen]);
 
   return (
     <>
@@ -77,6 +57,9 @@ export function AppShell({
 
           <QuickAddSheet />
           <MobileTimerSheet />
+          <GlobalTaskCreator />
+          <ShortcutsCheatsheet />
+          <KeyboardShortcuts />
         </>
       )}
     </>
