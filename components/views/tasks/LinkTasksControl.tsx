@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
+import { collapseRecurringSeries } from "@/lib/recurrence";
 import type { Task } from "@/lib/types";
 
 interface Props {
@@ -14,7 +15,9 @@ export function LinkTasksControl({ projectId, value, onChange }: Props) {
   const tasks = useStore((s) => s.tasks);
   const [showFree, setShowFree] = useState(false);
 
-  const projectTasks = tasks
+  const collapsed = useMemo(() => collapseRecurringSeries(tasks), [tasks]);
+
+  const projectTasks = collapsed
     .filter(
       (t) =>
         t.projectId === projectId &&
@@ -22,7 +25,7 @@ export function LinkTasksControl({ projectId, value, onChange }: Props) {
         t.status !== "done",
     )
     .slice(0, 12);
-  const freeTasks = tasks.filter(
+  const freeTasks = collapsed.filter(
     (t) => t.projectId === null && !t.parentTaskId && t.status !== "done",
   );
 
