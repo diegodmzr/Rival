@@ -7,10 +7,12 @@ import {
   useSensor,
   useSensors,
   useDroppable,
+  useDraggable,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { TaskChip } from "./TaskChip";
+import { TaskCard } from "./TaskCard";
 import { TaskDialog } from "./TaskDialog";
 import { useStore } from "@/lib/store";
 import { updateTask } from "@/lib/actions/tasks";
@@ -30,6 +32,28 @@ function isoDate(d: Date): string {
 }
 
 const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
+
+function DraggableCard({
+  task,
+  onOpen,
+}: {
+  task: Task;
+  onOpen: (t: Task) => void;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: task.id,
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={{ opacity: isDragging ? 0.3 : 1 }}
+    >
+      <TaskCard task={task} onOpen={onOpen} />
+    </div>
+  );
+}
 
 function DayCell({
   date,
@@ -55,7 +79,7 @@ function DayCell({
       ref={setNodeRef}
       className={`flex flex-col border-r border-b border-border last:border-r-0 ${
         isOver ? "bg-surface" : ""
-      } ${dim ? "opacity-40" : ""} ${compact ? "min-h-[60px] sm:min-h-[68px] p-1" : "min-h-[90px] sm:min-h-[140px] p-1.5"}`}
+      } ${dim ? "opacity-40" : ""} ${compact ? "min-h-[60px] sm:min-h-[68px] p-1" : "min-h-[140px] sm:min-h-[200px] p-1.5"}`}
     >
       <div className="flex items-center justify-between mb-1">
         <span
@@ -73,7 +97,9 @@ function DayCell({
           +
         </button>
       </div>
-      <div className="space-y-0.5 flex-1 overflow-hidden">
+      <div
+        className={`flex-1 overflow-hidden ${compact ? "space-y-0.5" : "space-y-1.5"}`}
+      >
         {compact ? (
           <>
             {tasks.slice(0, 3).map((t) => (
@@ -86,7 +112,9 @@ function DayCell({
             )}
           </>
         ) : (
-          tasks.map((t) => <TaskChip key={t.id} task={t} onClick={onOpenTask} />)
+          tasks.map((t) => (
+            <DraggableCard key={t.id} task={t} onOpen={onOpenTask} />
+          ))
         )}
       </div>
     </div>
@@ -248,9 +276,9 @@ export function TasksCalendarView({ tasks }: { tasks: Task[] }) {
           <div className="text-[10.5px] text-accent uppercase mb-1.5 tracking-wide">
             En retard · {overdue.length}
           </div>
-          <div className="flex flex-wrap gap-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             {overdue.map((t) => (
-              <TaskChip key={t.id} task={t} onClick={setEditing} />
+              <DraggableCard key={t.id} task={t} onOpen={setEditing} />
             ))}
           </div>
         </div>
@@ -295,9 +323,9 @@ export function TasksCalendarView({ tasks }: { tasks: Task[] }) {
           <div className="text-[10.5px] text-text-3 uppercase mb-1.5 tracking-wide">
             À planifier · {undated.length}
           </div>
-          <div className="flex flex-wrap gap-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             {undated.map((t) => (
-              <TaskChip key={t.id} task={t} onClick={setEditing} />
+              <DraggableCard key={t.id} task={t} onOpen={setEditing} />
             ))}
           </div>
         </div>
