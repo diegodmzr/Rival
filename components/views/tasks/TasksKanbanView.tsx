@@ -14,6 +14,12 @@ import {
 } from "@dnd-kit/core";
 import { TaskCard } from "./TaskCard";
 import { TaskDialog } from "./TaskDialog";
+import { KanbanRangePicker } from "./KanbanRangePicker";
+import {
+  defaultRange,
+  filterTasksForKanban,
+  type KanbanRange,
+} from "./kanbanRange";
 import { useStore } from "@/lib/store";
 import { setTaskStatus } from "@/lib/actions/tasks";
 import type { Task, TaskStatus } from "@/lib/types";
@@ -78,18 +84,23 @@ export function TasksKanbanView({ tasks }: { tasks: Task[] }) {
   const updateLocal = useStore((s) => s.updateTaskLocal);
   const [editing, setEditing] = useState<Task | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [range, setRange] = useState<KanbanRange>(() => defaultRange());
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
+  const visibleTasks = useMemo(
+    () => filterTasksForKanban(tasks, range),
+    [tasks, range],
+  );
+
   const byStatus = useMemo(() => {
     const map: Record<TaskStatus, Task[]> = { todo: [], in_progress: [], done: [] };
-    for (const t of tasks) {
-      if (t.parentTaskId) continue;
+    for (const t of visibleTasks) {
       map[t.status].push(t);
     }
     return map;
-  }, [tasks]);
+  }, [visibleTasks]);
 
   const active = tasks.find((t) => t.id === activeId);
 
@@ -114,6 +125,9 @@ export function TasksKanbanView({ tasks }: { tasks: Task[] }) {
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
+      <div className="mb-3">
+        <KanbanRangePicker value={range} onChange={setRange} />
+      </div>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2">
         {COLUMNS.map((col) => (
           <Column
