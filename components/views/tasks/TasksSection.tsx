@@ -39,7 +39,7 @@ export function TasksSection({ scope }: Props) {
         setView(v as TasksView);
       }
       const m = window.localStorage.getItem("rival.tasksCalendarMode");
-      if (m === "week" || m === "month") {
+      if (m === "week" || m === "workweek" || m === "days4" || m === "month") {
         setMode(m as TasksCalendarMode);
       }
     } catch {}

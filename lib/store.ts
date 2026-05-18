@@ -20,7 +20,7 @@ import { todayISO } from "./date";
 import { collapseRecurringSeries } from "./recurrence";
 
 export type TasksView = "list" | "kanban" | "calendar";
-export type TasksCalendarMode = "week" | "month";
+export type TasksCalendarMode = "week" | "workweek" | "days4" | "month";
 
 export interface ServerSnapshot {
   currentUser: User;

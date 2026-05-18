@@ -33,6 +33,20 @@ function isoDate(d: Date): string {
 
 const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
 
+const GRID_COLS: Record<string, string> = {
+  days4: "grid-cols-4",
+  workweek: "grid-cols-5",
+  week: "grid-cols-7",
+  month: "grid-cols-7",
+};
+
+const GRID_MIN_W: Record<string, string> = {
+  days4: "min-w-[480px]",
+  workweek: "min-w-[520px]",
+  week: "min-w-[560px]",
+  month: "",
+};
+
 function DraggableCard({
   task,
   onOpen,
@@ -140,6 +154,20 @@ export function TasksCalendarView({ tasks }: { tasks: Task[] }) {
         return isoDate(d);
       });
     }
+    if (mode === "workweek") {
+      return Array.from({ length: 5 }, (_, i) => {
+        const d = new Date(anchor);
+        d.setDate(d.getDate() + i);
+        return isoDate(d);
+      });
+    }
+    if (mode === "days4") {
+      return Array.from({ length: 4 }, (_, i) => {
+        const d = new Date(anchor);
+        d.setDate(d.getDate() + i);
+        return isoDate(d);
+      });
+    }
     const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
     const startGrid = startOfWeek(first);
     return Array.from({ length: 42 }, (_, i) => {
@@ -191,9 +219,13 @@ export function TasksCalendarView({ tasks }: { tasks: Task[] }) {
   const navPrev = () => {
     setAnchor((a) => {
       const d = new Date(a);
-      if (mode === "week") {
+      if (mode === "week" || mode === "workweek") {
         d.setDate(d.getDate() - 7);
         return startOfWeek(d);
+      }
+      if (mode === "days4") {
+        d.setDate(d.getDate() - 4);
+        return d;
       }
       return new Date(d.getFullYear(), d.getMonth() - 1, 1);
     });
@@ -201,26 +233,45 @@ export function TasksCalendarView({ tasks }: { tasks: Task[] }) {
   const navNext = () => {
     setAnchor((a) => {
       const d = new Date(a);
-      if (mode === "week") {
+      if (mode === "week" || mode === "workweek") {
         d.setDate(d.getDate() + 7);
         return startOfWeek(d);
+      }
+      if (mode === "days4") {
+        d.setDate(d.getDate() + 4);
+        return d;
       }
       return new Date(d.getFullYear(), d.getMonth() + 1, 1);
     });
   };
   const navToday = () => {
     const now = new Date();
-    setAnchor(
-      mode === "week" ? startOfWeek(now) : new Date(now.getFullYear(), now.getMonth(), 1),
-    );
+    if (mode === "week" || mode === "workweek") {
+      setAnchor(startOfWeek(now));
+    } else if (mode === "days4") {
+      now.setHours(0, 0, 0, 0);
+      setAnchor(now);
+    } else {
+      setAnchor(new Date(now.getFullYear(), now.getMonth(), 1));
+    }
   };
 
   const periodLabel = useMemo(() => {
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
     if (mode === "week") {
       const end = new Date(anchor);
       end.setDate(end.getDate() + 6);
-      const fmt = (d: Date) =>
-        d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+      return `${fmt(anchor)} – ${fmt(end)}`;
+    }
+    if (mode === "workweek") {
+      const end = new Date(anchor);
+      end.setDate(end.getDate() + 4);
+      return `${fmt(anchor)} – ${fmt(end)}`;
+    }
+    if (mode === "days4") {
+      const end = new Date(anchor);
+      end.setDate(end.getDate() + 3);
       return `${fmt(anchor)} – ${fmt(end)}`;
     }
     return anchor.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
@@ -257,15 +308,30 @@ export function TasksCalendarView({ tasks }: { tasks: Task[] }) {
           </span>
         </div>
         <div className="inline-flex bg-bg border border-border rounded p-0.5 shrink-0">
-          {(["week", "month"] as const).map((m) => (
+          {([
+            ["days4", "4j"],
+            ["workweek", "Lun–Ven"],
+            ["week", "Semaine"],
+            ["month", "Mois"],
+          ] as const).map(([m, label]) => (
             <button
               key={m}
-              onClick={() => setMode(m)}
+              onClick={() => {
+                if (m === "workweek" || m === "week") {
+                  setAnchor(startOfWeek(anchor));
+                }
+                if (m === "days4") {
+                  const a = new Date(anchor);
+                  a.setHours(0, 0, 0, 0);
+                  setAnchor(a);
+                }
+                setMode(m);
+              }}
               className={`px-2.5 py-1 rounded ${
                 mode === m ? "bg-surface text-text" : "text-text-3 hover:text-text"
               }`}
             >
-              {m === "week" ? "Semaine" : "Mois"}
+              {label}
             </button>
           ))}
         </div>
@@ -285,7 +351,7 @@ export function TasksCalendarView({ tasks }: { tasks: Task[] }) {
       )}
 
       <div className="border-t border-l border-border rounded overflow-x-auto">
-        <div className={mode === "week" ? "min-w-[560px]" : ""}>
+        <div className={GRID_MIN_W[mode]}>
           {mode === "month" && (
             <div className="grid grid-cols-7 bg-bg text-[10px] text-text-3 uppercase tracking-wide">
               {WEEKDAYS.map((w, i) => (
@@ -298,7 +364,7 @@ export function TasksCalendarView({ tasks }: { tasks: Task[] }) {
               ))}
             </div>
           )}
-          <div className="grid grid-cols-7">
+          <div className={`grid ${GRID_COLS[mode]}`}>
             {days.map((d) => (
               <DayCell
                 key={d}
