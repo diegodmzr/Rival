@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Play, Pause, Square, X } from "lucide-react";
+import { Play, Pause, Square, Trash2, X } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { pad2 } from "@/lib/format";
 import {
   startTimer as startTimerAction,
   pauseTimer as pauseTimerAction,
   setTimerProject as setTimerProjectAction,
+  resetTimer as resetTimerAction,
 } from "@/lib/actions/timer";
 import { StopTimerDialog } from "@/components/views/tasks/StopTimerDialog";
 
@@ -80,6 +81,21 @@ export function MobileTimerSheet() {
   const onStopSaved = () => {
     localReset();
     close();
+  };
+
+  // Throw the running chrono away without writing a time entry.
+  const discard = () => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm("Supprimer le chrono sans l'enregistrer ?")
+    )
+      return;
+    setError(null);
+    localReset();
+    close();
+    startTransition(async () => {
+      await resetTimerAction();
+    });
   };
 
   const onProjectChange = (projectId: string) => {
@@ -205,6 +221,18 @@ export function MobileTimerSheet() {
             >
               <Square size={13} strokeWidth={1.4} />
               <span className="text-[13px]">Stop</span>
+            </button>
+          )}
+          {hasElapsed && (
+            <button
+              type="button"
+              onClick={discard}
+              disabled={pending}
+              className="px-4 rounded-[10px] bg-surface2 border border-border text-text-3 inline-flex items-center justify-center cursor-pointer disabled:opacity-40"
+              aria-label="Supprimer le chrono sans enregistrer"
+              title="Supprimer sans enregistrer"
+            >
+              <Trash2 size={13} strokeWidth={1.4} />
             </button>
           )}
         </div>

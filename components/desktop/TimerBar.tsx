@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Play, Pause, Square } from "lucide-react";
+import { Play, Pause, Square, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { pad2 } from "@/lib/format";
 import { todayISO } from "@/lib/date";
@@ -9,6 +9,7 @@ import {
   startTimer as startTimerAction,
   pauseTimer as pauseTimerAction,
   setTimerProject as setTimerProjectAction,
+  resetTimer as resetTimerAction,
   stopTimerAndSave,
 } from "@/lib/actions/timer";
 import { FloatingTimerButton } from "./FloatingTimerWindow";
@@ -71,6 +72,19 @@ export function TimerBar() {
     localReset();
   };
 
+  // Throw the running chrono away without writing a time entry.
+  const discard = () => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm("Supprimer le chrono sans l'enregistrer ?")
+    )
+      return;
+    localReset();
+    startTransition(async () => {
+      await resetTimerAction();
+    });
+  };
+
   const onProjectChange = (projectId: string) => {
     localSetProject(projectId);
     startTransition(async () => {
@@ -126,6 +140,18 @@ export function TimerBar() {
           title="Arrêter & enregistrer"
         >
           <Square size={10} strokeWidth={1.3} />
+        </button>
+      )}
+      {hasElapsed && (
+        <button
+          onClick={discard}
+          disabled={pending}
+          type="button"
+          aria-label="Supprimer le chrono sans enregistrer"
+          className="w-[26px] h-[26px] rounded-[5px] bg-surface2 border border-border text-text-3 grid place-items-center cursor-pointer hover:text-text disabled:opacity-40"
+          title="Supprimer sans enregistrer"
+        >
+          <Trash2 size={11} strokeWidth={1.3} />
         </button>
       )}
       <FloatingTimerButton />

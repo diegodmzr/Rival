@@ -1,5 +1,11 @@
 import type { TimeEntry, UserId } from "./types";
-import { daysAgoISO, diffDays, todayISO } from "./date";
+import {
+  daysAgoISO,
+  diffDays,
+  startOfMonthISO,
+  startOfWeekISO,
+  todayISO,
+} from "./date";
 
 export function hoursOnDate(entries: TimeEntry[], userId: UserId, iso: string): number {
   let s = 0;
@@ -24,16 +30,34 @@ export function hoursInLastDays(
   return s;
 }
 
+// Sums entries from `fromISO` (inclusive) up to today. Dates are stored as
+// yyyy-mm-dd, so lexicographic comparison is chronological.
+export function hoursSince(
+  entries: TimeEntry[],
+  userId: UserId,
+  fromISO: string,
+): number {
+  const today = todayISO();
+  let s = 0;
+  for (const e of entries) {
+    if (e.userId !== userId) continue;
+    if (e.date >= fromISO && e.date <= today) s += e.hours;
+  }
+  return s;
+}
+
 export function todayHours(entries: TimeEntry[], userId: UserId): number {
   return hoursOnDate(entries, userId, todayISO());
 }
 
+// Calendar week: from Monday 00:00, not the last 7 days.
 export function weekHours(entries: TimeEntry[], userId: UserId): number {
-  return hoursInLastDays(entries, userId, 7);
+  return hoursSince(entries, userId, startOfWeekISO());
 }
 
+// Calendar month: from the 1st at 00:00, not the last 30 days.
 export function monthHours(entries: TimeEntry[], userId: UserId): number {
-  return hoursInLastDays(entries, userId, 30);
+  return hoursSince(entries, userId, startOfMonthISO());
 }
 
 // Daily series, newest first (index 0 = today)
@@ -162,13 +186,14 @@ export function computeBadges(entries: TimeEntry[], userId: UserId, monthlyGoal:
     return s.filter((h) => h >= 1).length / 30;
   })();
 
-  // Early-bird: any entry created before 08:00 in the last 7 days
+  // Early-bird: any entry created before 08:00 this calendar week — the badge
+  // reads "cette semaine", so it follows the same Monday boundary as weekHours.
   const early = (() => {
     const today = todayISO();
+    const weekStart = startOfWeekISO();
     return entries.some((e) => {
       if (e.userId !== userId) return false;
-      const d = diffDays(today, e.date);
-      if (d < 0 || d >= 7) return false;
+      if (e.date < weekStart || e.date > today) return false;
       const hh = new Date(e.createdAt).getHours();
       return hh < 8;
     });

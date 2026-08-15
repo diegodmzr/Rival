@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { PictureInPicture2, Play, Pause, Square } from "lucide-react";
+import { PictureInPicture2, Play, Pause, Square, Trash2 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { pad2 } from "@/lib/format";
 import { todayISO } from "@/lib/date";
@@ -10,6 +10,7 @@ import {
   startTimer as startTimerAction,
   pauseTimer as pauseTimerAction,
   setTimerProject as setTimerProjectAction,
+  resetTimer as resetTimerAction,
   stopTimerAndSave,
 } from "@/lib/actions/timer";
 
@@ -110,12 +111,21 @@ function FloatingTimerContent() {
 
   const [, setTick] = useState(0);
   const [, startTransition] = useTransition();
+  // window.confirm would pop on the opener window, out of sight of the PiP
+  // window — so discarding is armed by a first click and confirmed by a second.
+  const [discardArmed, setDiscardArmed] = useState(false);
 
   useEffect(() => {
     if (!timer.running) return;
     const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, [timer.running]);
+
+  useEffect(() => {
+    if (!discardArmed) return;
+    const id = setTimeout(() => setDiscardArmed(false), 3000);
+    return () => clearTimeout(id);
+  }, [discardArmed]);
 
   const elapsed = getElapsed();
   const h = Math.floor(elapsed / 3600);
@@ -144,6 +154,18 @@ function FloatingTimerContent() {
     localReset();
     startTransition(async () => {
       await stopTimerAndSave(todayISO());
+    });
+  };
+
+  const discard = () => {
+    if (!discardArmed) {
+      setDiscardArmed(true);
+      return;
+    }
+    setDiscardArmed(false);
+    localReset();
+    startTransition(async () => {
+      await resetTimerAction();
     });
   };
 
@@ -208,6 +230,29 @@ function FloatingTimerContent() {
             className="w-[34px] h-[34px] rounded-[6px] bg-surface2 border border-border text-text-2 grid place-items-center cursor-pointer hover:text-text"
           >
             <Square size={12} strokeWidth={1.4} />
+          </button>
+        )}
+        {hasElapsed && (
+          <button
+            onClick={discard}
+            type="button"
+            aria-label="Supprimer le chrono sans enregistrer"
+            title={
+              discardArmed
+                ? "Clique encore pour confirmer"
+                : "Supprimer sans enregistrer"
+            }
+            className={`h-[34px] rounded-[6px] border grid place-items-center cursor-pointer ${
+              discardArmed
+                ? "px-3 bg-white/[0.08] border-border-strong text-text"
+                : "w-[34px] bg-surface2 border-border text-text-3 hover:text-text"
+            }`}
+          >
+            {discardArmed ? (
+              <span className="text-[11px] whitespace-nowrap">Confirmer ?</span>
+            ) : (
+              <Trash2 size={12} strokeWidth={1.4} />
+            )}
           </button>
         )}
       </div>

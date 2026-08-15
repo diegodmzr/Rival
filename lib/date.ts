@@ -18,6 +18,23 @@ export function daysAgoISO(n: number): string {
   return toISODate(d);
 }
 
+// Monday 00:00 of the current calendar week (not a rolling 7-day window).
+export function startOfWeekISO(ref: Date = new Date()): string {
+  const d = new Date(ref);
+  d.setHours(0, 0, 0, 0);
+  // getDay(): 0 = Sunday … 6 = Saturday. Shift so Monday is day 0.
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return toISODate(d);
+}
+
+// The 1st of the current calendar month at 00:00 (not a rolling 30-day window).
+export function startOfMonthISO(ref: Date = new Date()): string {
+  const d = new Date(ref);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(1);
+  return toISODate(d);
+}
+
 export function parseISODate(s: string): Date {
   const [y, m, d] = s.split("-").map((n) => parseInt(n, 10));
   return new Date(y, m - 1, d);
